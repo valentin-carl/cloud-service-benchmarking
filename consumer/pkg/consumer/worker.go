@@ -12,7 +12,7 @@ type Worker struct {
 	Buffer Buffer
 }
 
-func Consume(channel *amqp.Channel, queue amqp.Queue, config *config.Config, workerId int, done <-chan bool) {
+func (Worker) Consume(channel *amqp.Channel, queue amqp.Queue, config *config.Config, workerId int, done <-chan bool) {
 
 	// register as consumer at broker
 	options := config.Consumer.Options
@@ -47,7 +47,11 @@ func Consume(channel *amqp.Channel, queue amqp.Queue, config *config.Config, wor
 
 				// todo remember that break here will (I think???) only break the select and not the for loop
 				//  => check csb-temp
+
+				goto ClockOff
 			}
 		}
 	}
+ClockOff:
+	log.Println("worker", workerId, "done")
 }
