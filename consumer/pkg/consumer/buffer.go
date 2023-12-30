@@ -76,7 +76,7 @@ func (b *Buffer) Dump(workerId, dir, filename string) error {
 	}(file)
 
 	// store buffer contents
-	// write header
+	// write column titles
 	bytesWritten := 0
 	n, err := file.Write([]byte("tProducer, tConsumer\n"))
 	if err != nil {
