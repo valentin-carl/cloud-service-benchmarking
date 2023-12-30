@@ -1,0 +1,35 @@
+{
+    "broker": {
+        "url": "amqp://jeff:jeff@host.docker.internal:5672",
+        "queue": {
+            "name": "queue",
+            "durable": false,
+            "autoDelete": false,
+            "exclusive": false,
+            "noWait": false,
+            "args": {}
+        }
+    },
+    "consumer": {
+        "nWorkers": 50,
+        "bufferSize": 8192,
+        "node": 1,
+        "options": {
+            "autoAck": false,
+            "ackMultiple": false,
+            "exclusive": false,
+            "noLocal": false,
+            "noWait": false,
+            "args": {}
+        }
+    },
+    "workload": {
+        "generate": true,
+        "workloadPath": ""
+    },
+    "experiment": {
+        "id": "experiment-run-0",
+        "duration": 360,
+        "nMessagesTotal": 5000000
+    }
+}
