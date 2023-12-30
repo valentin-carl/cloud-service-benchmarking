@@ -34,7 +34,7 @@ func NewBuffer(size uint) *Buffer {
 
 // Store a single measurement in the buffer
 // it checks automatically whether the buffer is full and stores measurements in a file accordingly
-func (b *Buffer) Store(workerId string, config config.Config, measurement struct {
+func (b *Buffer) Store(workerId string, config *config.Config, measurement struct {
 	tProducer int64
 	tConsumer int64
 }) error {
