@@ -42,6 +42,7 @@ type Config struct {
 
 	Experiment struct {
 		Id             string `json:"id"`
+		DataDir        string `json:"dataDir"`
 		Duration       int    `json:"duration"` // TODO change to time.Duration and deal with nanoseconds
 		NMessagesTotal int    `json:"NMessagesTotal"`
 	} `json:"experiment"`

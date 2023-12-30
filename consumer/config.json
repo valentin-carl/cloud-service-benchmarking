@@ -29,6 +29,7 @@
     },
     "experiment": {
         "id": "experiment-run-0",
+        "dataDir": "./data",
         "duration": 360,
         "nMessagesTotal": 5000000
     }
