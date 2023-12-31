@@ -108,3 +108,15 @@ func (b *Buffer) Dump(workerId, dir, filename string) error {
 
 	return nil
 }
+
+func (b *Buffer) Close(workerId string, config *config.Config) error {
+	var err error
+	if b.ptr != 0 {
+		err = b.Dump(
+			workerId,
+			config.Experiment.DataDir,
+			fmt.Sprintf("%s-%s-%d", config.Experiment.Id, workerId, b.nDumps),
+		)
+	}
+	return err
+}
