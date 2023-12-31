@@ -3,9 +3,11 @@ package consumer
 import (
 	"consumer/pkg/config"
 	"consumer/pkg/utils"
+	"errors"
 	"fmt"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"log"
+	"time"
 )
 
 type Worker struct {
@@ -22,11 +24,16 @@ func NewWorker(workerId string, bufferSize uint, config *config.Config) *Worker 
 	}
 }
 
-func (w *Worker) Consume(channel *amqp.Channel, queue amqp.Queue, workerId int, done <-chan bool) {
+func (w *Worker) Consume(channel *amqp.Channel, queue amqp.Queue, done <-chan bool) {
+
+	// dump the remaining buffer contents at the end
+	defer func(buffer *Buffer, workerId string, config *config.Config) {
+		utils.Handle(buffer.Close(workerId, config))
+	}(w.buffer, w.workerId, w.config)
 
 	// register as consumer at broker
 	options := w.config.Consumer.Options
-	consumerStr := fmt.Sprintf("consumer-%d-%d", w.config.Consumer.Node, workerId)
+	consumerStr := fmt.Sprintf("consumer-%d-%s", w.config.Consumer.Node, w.workerId)
 	events, err := channel.Consume(
 		queue.Name,
 		consumerStr,
@@ -43,14 +50,30 @@ func (w *Worker) Consume(channel *amqp.Channel, queue amqp.Queue, workerId int, 
 		select {
 		case event := <-events:
 			{
-				var measurement struct {
-					tProducer int64
-					tConsumer int64
+				// read producer timestamp from event header
+				err := event.Headers.Validate()
+				utils.Handle(err)
+				tProd, ok := event.Headers["tProducer"]
+				if !ok {
+					utils.Handle(errors.New("could not read tProducer header"))
 				}
-				// todo get measurement
+				tProducer, ok := tProd.(int64)
+				if !ok {
+					utils.Handle(errors.New("could not transform tProducer to int64"))
+				}
 
 				// store measurement in buffer
-				err := w.buffer.Store(w.workerId, w.config, measurement)
+				err = w.buffer.Store(
+					w.workerId,
+					w.config,
+					struct {
+						tProducer int64
+						tConsumer int64
+					}{
+						tProducer: tProducer,
+						tConsumer: time.Now().UnixMilli(),
+					},
+				)
 				utils.Handle(err)
 
 				// (depending on configuration) send acknowledgement to broker
@@ -61,16 +84,13 @@ func (w *Worker) Consume(channel *amqp.Channel, queue amqp.Queue, workerId int, 
 			}
 		case <-done:
 			{
-				log.Println("worker", workerId, "is done")
-				// todo write remaining buffer contents to disk
-
-				// todo remember that break here will (I think???) only break the select and not the for loop
+				// todo remember that break here will (I think?) only break the select and not the for loop
 				//  => check csb-temp
-
+				log.Println("worker", w.workerId, "is done")
 				goto ClockOff
 			}
 		}
 	}
 ClockOff:
-	log.Println("worker", workerId, "is going home")
+	log.Println("worker", w.workerId, "is going home")
 }
