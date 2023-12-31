@@ -50,10 +50,17 @@ func main() {
 	utils.Handle(err)
 
 	// archive raw data and update config file with new experiment number
+	// note: experiment id is only incremented if this part is reached,
+	// i.e. if there were no errors before
+	// this could cause inconsistency between consumers if multiple are run
+	// TODO fix this if it becomes an issue
 	err = utils.ArchiveMeasurements(conf.Experiment.DataDir)
 	utils.Handle(err)
 	err = conf.IncrementExperimentId(configFile)
 	utils.Handle(err)
+
+	// TODO idea: create file server here to make downloading the data from a vm easy
+	// 	should be pretty straightforward in go
 
 	log.Printf("the end :-)")
 }

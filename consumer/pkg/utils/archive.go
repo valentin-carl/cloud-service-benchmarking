@@ -74,7 +74,14 @@ func MoveMeasurements(fromDir string, toDir string) error {
 // at top level of dataDir into subdir
 func ArchiveMeasurements(dir string) error {
 
-	// TODO don't do all this stuff if there is no new data in the dataDir
+	// check if this actually has to be run
+	if found, err := NewMeasurements(dir); err == nil && !found {
+		log.Println("no new measurements found, stopping early")
+		return nil
+	} else if err != nil {
+		log.Println("error while looking for new measurements")
+		return err
+	}
 
 	// create new subdir for most recent experiment measurements
 	nextNumber, err := GetNextExpNumber(dir)

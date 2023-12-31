@@ -7,6 +7,7 @@ import (
 	"os"
 	"regexp"
 	"strconv"
+	"strings"
 )
 
 func Handle(err error) {
@@ -90,4 +91,22 @@ func ExtractNumber(input []byte) (int, error) {
 		return 0, err
 	}
 	return result, nil
+}
+
+// NewMeasurements looks whether there are any .csv files in a given directory
+// Useful to proxy if there are any measurement in the data directory,
+// trying to prevent data loss (i.e. accidentally overwriting old measurements) :-)
+func NewMeasurements(dir string) (bool, error) {
+	// go over all files in directory
+	files, err := os.ReadDir(dir)
+	if err != nil {
+		return false, err
+	}
+	// check if one of them ends in .csv
+	for _, file := range files {
+		if !file.IsDir() && strings.HasSuffix(file.Name(), ".csv") {
+			return true, nil
+		}
+	}
+	return false, nil
 }
