@@ -1,6 +1,7 @@
 package consumer
 
 import (
+	buffer "consumer/pkg/buffer"
 	"consumer/pkg/config"
 	"consumer/pkg/utils"
 	"errors"
@@ -12,22 +13,22 @@ import (
 
 type Worker struct {
 	workerId string
-	buffer   *Buffer
+	buffer   *buffer.Buffer
 	config   *config.Config
 }
 
 func NewWorker(workerId string, bufferSize uint, config *config.Config) *Worker {
 	return &Worker{
 		workerId: workerId,
-		buffer:   NewBuffer(bufferSize),
+		buffer:   buffer.NewBuffer(bufferSize),
 		config:   config,
 	}
 }
 
 func (w *Worker) Consume(channel *amqp.Channel, queue amqp.Queue, done <-chan bool) {
 
-	// dump the remaining buffer contents at the end
-	defer func(buffer *Buffer, workerId string, config *config.Config) {
+	// flush the buffer at the end
+	defer func(buffer *buffer.Buffer, workerId string, config *config.Config) {
 		utils.Handle(buffer.Close(workerId, config))
 	}(w.buffer, w.workerId, w.config)
 
@@ -51,6 +52,7 @@ func (w *Worker) Consume(channel *amqp.Channel, queue amqp.Queue, done <-chan bo
 		case event := <-events:
 			{
 				// read producer timestamp from event header
+				log.Println(w.workerId, "received message")
 				err := event.Headers.Validate()
 				utils.Handle(err)
 				tProd, ok := event.Headers["tProducer"]
@@ -66,12 +68,9 @@ func (w *Worker) Consume(channel *amqp.Channel, queue amqp.Queue, done <-chan bo
 				err = w.buffer.Store(
 					w.workerId,
 					w.config,
-					struct {
-						tProducer int64
-						tConsumer int64
-					}{
-						tProducer: tProducer,
-						tConsumer: time.Now().UnixMilli(),
+					buffer.Measurement{
+						TProducer: tProducer,
+						TConsumer: time.Now().UnixMilli(),
 					},
 				)
 				utils.Handle(err)
@@ -86,7 +85,7 @@ func (w *Worker) Consume(channel *amqp.Channel, queue amqp.Queue, done <-chan bo
 			{
 				// todo remember that break here will (I think?) only break the select and not the for loop
 				//  => check csb-temp
-				log.Println("worker", w.workerId, "is done")
+				log.Println("worker", w.workerId, "is done, flushing buffer")
 				goto ClockOff
 			}
 		}

@@ -10,6 +10,9 @@
             "args": {}
         }
     },
+    "producer": {
+        "nProducers": 25
+    },
     "consumer": {
         "nWorkers": 50,
         "bufferSize": 8192,
@@ -30,6 +33,7 @@
     "experiment": {
         "id": "experiment-run-0",
         "dataDir": "./data",
+        "outDir": "./out",
         "duration": 360,
         "nMessagesTotal": 5000000
     }
