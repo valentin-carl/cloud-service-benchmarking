@@ -13,40 +13,51 @@ func Handle(err error) {
 	}
 }
 
-func MergeDumps(target, dir string) (*os.File, error) {
-	// todo test
+// MergeMeasurements takes all measurement files and joins them to a single .csv file
+// careful: if a file with the same name already exists, it is overwritten and data might be lost
+func MergeMeasurements(target, dataDir, outDir string) (*os.File, error) {
 
 	// contents of data directory => measurements
 	log.Println("trying to merge measurements")
-	data, err := os.ReadDir(dir)
+	data, err := os.ReadDir(dataDir)
 	if err != nil {
 		return nil, err
 	}
-	log.Printf("found %d potential dumps\n", len(data))
+	log.Printf("found %d potential measurement files\n", len(data))
+
+	// TODO filter data
 
 	// target file
-	t, err := os.Create(target)
+	t, err := os.Create(fmt.Sprintf("%s/%s", outDir, target))
 	if err != nil {
 		return nil, err
 	}
 	log.Println("created", t.Name())
 	write := func(line string) error {
 		_, err := t.Write([]byte(fmt.Sprintf("%s\n", line)))
+		log.Println("writing")
 		return err
 	}
 	err = write("tProducer, tConsumer")
 	if err != nil {
+		log.Println("error")
 		return nil, err
 	}
 
-	// go over all dumps and append measurements to target file
+	// go over all measurement files and append measurements to target file
 	for _, x := range data {
-		file, err := os.Open(x.Name())
+
+		filename := fmt.Sprintf("%s/%s", dataDir, x.Name())
+
+		// todo maybe filter here?
+
+		file, err := os.Open(filename)
 		if err != nil {
+			log.Println("error here", filename)
 			return nil, err
 		}
 		defer file.Close() // todo
-		log.Println("appending measurements from", file.Name())
+		log.Println("appending measurements from", filename)
 
 		scanner := bufio.NewScanner(file)
 		for scanner.Scan() {
