@@ -62,7 +62,7 @@ func (c *Consumer) Start(interrupt <-chan bool) {
 	// wait for interrupt or signals from producers to stop the workers
 	stopWorkers := func() {
 		log.Println("consumer telling workers to flush buffers and stop")
-		stop <- true
+		close(stop)
 	}
 	nProducersDone, prodTotal := 0, c.config.Producer.NProducers
 	for {
@@ -71,7 +71,7 @@ func (c *Consumer) Start(interrupt <-chan bool) {
 			{
 				if string(msg.Body) == "end" {
 					nProducersDone++
-					log.Printf("received 'end' from producer, %d/%d producers are done\n", nProducersDone, prodTotal)
+					log.Printf("received \"end\" from producer, %d/%d producers are done\n", nProducersDone, prodTotal)
 					if nProducersDone == prodTotal {
 						log.Println("all producers are done, stopping workers")
 						goto Done
