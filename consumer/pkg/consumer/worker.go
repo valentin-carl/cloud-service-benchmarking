@@ -17,12 +17,16 @@ type Worker struct {
 	config   *config.Config
 }
 
-func NewWorker(workerId string, bufferSize uint, config *config.Config) *Worker {
+func NewWorker(workerId string, config *config.Config) *Worker {
 	return &Worker{
 		workerId: workerId,
-		buffer:   buffer.NewBuffer(bufferSize),
+		buffer:   buffer.NewBuffer(uint(config.Consumer.BufferSize)), // todo check if config field can be uint and still be parsed correctly
 		config:   config,
 	}
+}
+
+func (w *Worker) Start(channel *amqp.Channel, queue amqp.Queue, stop <-chan bool) {
+	go w.Consume(channel, queue, stop)
 }
 
 func (w *Worker) Consume(channel *amqp.Channel, queue amqp.Queue, done <-chan bool) {
@@ -45,6 +49,7 @@ func (w *Worker) Consume(channel *amqp.Channel, queue amqp.Queue, done <-chan bo
 		options.Args,
 	)
 	utils.Handle(err)
+	log.Printf("worker \"%s\" successfully registered as consumer at broker, starting to record measurements\n")
 
 	// read + handle messages
 	for {

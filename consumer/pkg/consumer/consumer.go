@@ -3,8 +3,9 @@ package consumer
 import (
 	"consumer/pkg/config"
 	"consumer/pkg/utils"
+	"fmt"
 	amqp "github.com/rabbitmq/amqp091-go"
-	"time"
+	"log"
 )
 
 type Consumer struct {
@@ -17,7 +18,7 @@ func NewConsumer(path string) *Consumer {
 	}
 }
 
-func (c *Consumer) Start() {
+func (c *Consumer) Start(interrupt <-chan bool) {
 
 	// connect to the broker
 	connection, err := amqp.Dial(c.config.Broker.URL)
@@ -39,12 +40,110 @@ func (c *Consumer) Start() {
 	)
 	utils.Handle(err)
 
+	// get channel with "end" message (go channel not amqp channel)
+	// context: after a producer is done, it sends an "end" message
+	// count and wait until all producers did so, then flush buffer and terminate
+	lastMsgChannel, err := c.GetLastMsgChannel(channel)
+
 	// create + start workers
-	// wait for <experiment-duration>, stop workers
-	done := make(chan bool)
-	for i := 0; i < c.config.Consumer.NWorkers; i++ {
-		go Consume(channel, queue, c.config, i, done)
+	stop := make(chan bool)
+	workers := make([]*Worker, c.config.Consumer.NWorkers)
+	for i := 0; i < len(workers); i++ {
+		workers[i] = NewWorker(
+			fmt.Sprintf("worker-%d", i),
+			c.config,
+		)
 	}
-	time.Sleep(time.Second * time.Duration(c.config.Experiment.Duration))
-	done <- true
+	for _, worker := range workers {
+		worker.Start(channel, queue, stop)
+		log.Printf("worker \"%s\" started\n", worker.workerId)
+	}
+
+	// wait for interrupt or signals from producers to stop the workers
+	stopWorkers := func() {
+		log.Println("consumer telling workers to flush buffers and stop")
+		stop <- true
+	}
+	nProducersDone, prodTotal := 0, c.config.Producer.NProducers
+	for {
+		select {
+		case msg := <-lastMsgChannel:
+			{
+				if string(msg.Body) == "end" {
+					nProducersDone++
+					log.Printf("received 'end' from producer, %d/%d producers are done\n", nProducersDone, prodTotal)
+					if nProducersDone == prodTotal {
+						log.Println("all producers are done, stopping workers")
+						goto Done
+					}
+				} else {
+					log.Println("consumer got message != \"end\" through lastMsgChannel:", string(msg.Body))
+				}
+			}
+		case <-interrupt:
+			{
+				log.Println("consumer was interrupted, stopping workers")
+				goto Done
+			}
+		}
+	}
+Done:
+	stopWorkers()
+}
+
+// GetLastMsgChannel returns a go channel the producers use to signal the end of the experiment
+// for reference: https://www.rabbitmq.com/tutorials/tutorial-three-go.html
+// This uses the fan-out pattern — every producer sends an 'end' message to each consumer
+// Once all of them (same number as number of producers) have been read, the experiment is done
+// The config for these queues won't change; hence, it doesn't need to be in the config file
+func (c *Consumer) GetLastMsgChannel(ch *amqp.Channel) (<-chan amqp.Delivery, error) {
+
+	exchange := "lastMsg"
+
+	// exchange
+	err := ch.ExchangeDeclare(
+		exchange,
+		"fanout",
+		false,
+		false,
+		false,
+		false,
+		nil,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	// new tmp queue
+	queue, err := ch.QueueDeclare(
+		"",
+		false,
+		false,
+		true,
+		false,
+		nil,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	// bind queue to exchange where producers send "end" messages
+	err = ch.QueueBind(
+		queue.Name,
+		"",
+		exchange,
+		false,
+		nil,
+	)
+
+	// register as consumer + return
+	return ch.Consume(
+		queue.Name,
+		"",
+		true,
+		false,
+		false,
+		false,
+		nil,
+	)
 }
