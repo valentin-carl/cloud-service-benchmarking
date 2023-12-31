@@ -1,4 +1,4 @@
-package consumer
+package buffer
 
 import (
 	"consumer/pkg/config"
@@ -9,44 +9,40 @@ import (
 	"os"
 )
 
+type Measurement struct {
+	TProducer int64
+	TConsumer int64
+}
+
 type Buffer struct {
-	Buffer []struct {
-		tProducer int64
-		tConsumer int64
-	}
+	Buffer []Measurement
 	Size   uint
 	ptr    uint
-	nDumps uint // number of dumps this buffer has done (keeping track for consistent file names)
+	nFlush uint // number of times this buffer has been flushed (keeping track for consistent file names)
 }
 
 // NewBuffer creates a new buffer that can hold up to <size> measurements
 func NewBuffer(size uint) *Buffer {
 	return &Buffer{
-		Buffer: make([]struct {
-			tProducer int64
-			tConsumer int64
-		}, size),
+		Buffer: make([]Measurement, size),
 		Size:   size,
 		ptr:    0,
-		nDumps: 0,
+		nFlush: 0,
 	}
 }
 
 // Store a single measurement in the buffer
 // it checks automatically whether the buffer is full and stores measurements in a file accordingly
-func (b *Buffer) Store(workerId string, config *config.Config, measurement struct {
-	tProducer int64
-	tConsumer int64
-}) error {
+func (b *Buffer) Store(workerId string, config *config.Config, measurement Measurement) error {
 	// throw error if buffer wasn't set up correctly
 	if b.Size == 0 {
 		return errors.New("buffer has size 0, cannot store anything")
 	}
 	// buffer is full
 	if b.ptr >= b.Size {
-		log.Println(workerId+":", "buffer full, dumping measurements")
-		// dump buffer contents and start with empty buffer & ptr = 0
-		err := b.Dump(workerId, config.Experiment.DataDir, fmt.Sprintf("%s-%s-%d", config.Experiment.Id, workerId, b.nDumps))
+		log.Println(workerId+":", "buffer full, flushing buffer")
+		// flush buffer and start with empty buffer & ptr = 0
+		err := b.Flush(workerId, config.Experiment.DataDir, fmt.Sprintf("%s-%s-%d", config.Experiment.Id, workerId, b.nFlush))
 		if err != nil {
 			return err
 		}
@@ -58,11 +54,11 @@ func (b *Buffer) Store(workerId string, config *config.Config, measurement struc
 	return nil
 }
 
-// Dump stores the buffer contents in csv format to a file and empties the buffer
+// Flush stores the buffer contents in csv format to a file and empties the buffer
 // - workerId: just for logging
 // - filename: should end in .csv and shouldn't exist already
 // - dir: should exist!
-func (b *Buffer) Dump(workerId, dir, filename string) error {
+func (b *Buffer) Flush(workerId, dir, filename string) error {
 
 	// todo validate inputs: check dir exists and filename doesn't
 
@@ -86,24 +82,21 @@ func (b *Buffer) Dump(workerId, dir, filename string) error {
 	// write measurements
 	for _, measurement := range b.Buffer {
 		// check whether buffer is not completely full
-		if measurement.tProducer == 0 && measurement.tConsumer == 0 {
-			log.Println(workerId+":", "buffer not full, dumping early")
+		if measurement.TProducer == 0 && measurement.TConsumer == 0 {
+			log.Println(workerId+":", "buffer not full, flushing early")
 			break // break here because the "0, 0" line doesn't need to be written
 		}
-		n, err = file.Write([]byte(fmt.Sprintf("%d, %d\n", measurement.tProducer, measurement.tConsumer)))
+		n, err = file.Write([]byte(fmt.Sprintf("%d, %d\n", measurement.TProducer, measurement.TConsumer)))
 		if err != nil {
 			return err
 		}
 		bytesWritten += n
 	}
-	log.Printf("%s: dumped %d bytes to %s/%s\n", workerId, bytesWritten, dir, filename)
+	log.Printf("%s: flushed %d bytes to %s/%s\n", workerId, bytesWritten, dir, filename)
 
-	// empty buffer, increase dump counter, reset current index in buffer to 0
-	b.Buffer = make([]struct {
-		tProducer int64
-		tConsumer int64
-	}, b.Size)
-	b.nDumps++
+	// empty buffer, increase flush counter, reset current index in buffer to 0
+	b.Buffer = make([]Measurement, b.Size)
+	b.nFlush++
 	b.ptr = 0
 
 	return nil
@@ -112,10 +105,10 @@ func (b *Buffer) Dump(workerId, dir, filename string) error {
 func (b *Buffer) Close(workerId string, config *config.Config) error {
 	var err error
 	if b.ptr != 0 {
-		err = b.Dump(
+		err = b.Flush(
 			workerId,
 			config.Experiment.DataDir,
-			fmt.Sprintf("%s-%s-%d", config.Experiment.Id, workerId, b.nDumps),
+			fmt.Sprintf("%s-%s-%d", config.Experiment.Id, workerId, b.nFlush),
 		)
 	}
 	return err
