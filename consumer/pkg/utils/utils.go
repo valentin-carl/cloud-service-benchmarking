@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"regexp"
+	"strconv"
 )
 
 func Handle(err error) {
@@ -75,4 +77,17 @@ func MergeMeasurements(target, dataDir, outDir string) (*os.File, error) {
 	// merge successful
 	log.Println("merge successful")
 	return t, nil
+}
+
+// ExtractNumber gets a byte slice with text (possibly containing a number)
+// and tries to extract and parse that number
+func ExtractNumber(input []byte) (int, error) {
+	re := regexp.MustCompile(`-?\d+`)
+	match := re.Find(input)
+	numberStr := string(match)
+	result, err := strconv.Atoi(numberStr)
+	if err != nil {
+		return 0, err
+	}
+	return result, nil
 }

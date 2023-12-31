@@ -5,12 +5,11 @@ import (
 	"log"
 	"os/exec"
 	"runtime"
-	"strconv"
 )
 
 const (
-	defaultBlockSize = 4096
-	measurementSize  = 128 // 2x int64
+	defaultBlockSize = 4096  // (bytes)
+	measurementSize  = 2 * 8 // 2x int64 == 16 bytes
 )
 
 // CalcOptimalBufferSize uses the systems block size to calculate
@@ -41,9 +40,9 @@ func GetBlockSize() (uint, error) {
 	// execute the command
 	output, err := cmd.Output()
 	if err != nil {
-		return -1, err
+		return 0, err
 	}
-	bs, err := strconv.Atoi(string(output))
-	log.Printf("block size %d\n", bs)
+	bs, err := utils.ExtractNumber(output)
+	log.Printf("block size %d\n", bs) // it's an error if this prints "block size 0"
 	return uint(bs), err
 }
