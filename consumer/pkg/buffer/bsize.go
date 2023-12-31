@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	defaultBlockSize = 4096  // (bytes)
+	defaultBlockSize = 4096  // bytes
 	measurementSize  = 2 * 8 // 2x int64 == 16 bytes
 )
 
@@ -43,6 +43,6 @@ func GetBlockSize() (uint, error) {
 		return 0, err
 	}
 	bs, err := utils.ExtractNumber(output)
-	log.Printf("block size %d\n", bs) // it's an error if this prints "block size 0"
+	log.Printf("block size %d\n", bs) // "block size 0" is usually an error
 	return uint(bs), err
 }

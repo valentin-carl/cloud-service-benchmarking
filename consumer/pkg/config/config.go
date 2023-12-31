@@ -47,7 +47,7 @@ type Config struct {
 		Id             string `json:"id"`
 		DataDir        string `json:"dataDir"`
 		OutDir         string `json:"outDir"`
-		Duration       int    `json:"duration"` // TODO change to time.Duration and deal with nanoseconds
+		Duration       int    `json:"duration"`
 		NMessagesTotal int    `json:"NMessagesTotal"`
 	} `json:"experiment"`
 }
