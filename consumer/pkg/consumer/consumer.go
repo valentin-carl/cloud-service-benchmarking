@@ -6,6 +6,7 @@ import (
 	"fmt"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"log"
+	"os"
 )
 
 type Consumer struct {
@@ -18,7 +19,7 @@ func NewConsumer(path string) *Consumer {
 	}
 }
 
-func (c *Consumer) Start(interrupt <-chan bool) {
+func (c *Consumer) Start(interrupt <-chan os.Signal) {
 
 	// connect to the broker
 	connection, err := amqp.Dial(c.config.Broker.URL)

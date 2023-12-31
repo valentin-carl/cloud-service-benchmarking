@@ -3,7 +3,12 @@ package config
 import (
 	"consumer/pkg/utils"
 	"encoding/json"
+	"errors"
+	"fmt"
+	"log"
 	"os"
+	"regexp"
+	"strconv"
 )
 
 // Config is similar for consumers & producers => only one file!
@@ -22,7 +27,7 @@ type Config struct {
 	} `json:"broker"`
 
 	Producer struct {
-		NProducers int `json:"NProducers"`
+		NProducers int `json:"nProducers"`
 	} `json:"producer"`
 
 	Consumer struct {
@@ -48,7 +53,7 @@ type Config struct {
 		DataDir        string `json:"dataDir"`
 		OutDir         string `json:"outDir"`
 		Duration       int    `json:"duration"`
-		NMessagesTotal int    `json:"NMessagesTotal"`
+		NMessagesTotal int    `json:"nMessagesTotal"`
 	} `json:"experiment"`
 }
 
@@ -69,4 +74,37 @@ func (c *Config) String() string {
 	confStr, err := json.MarshalIndent(c, "", "  ")
 	utils.Handle(err)
 	return string(confStr)
+}
+
+// IncrementExperimentId takes the number from the experiment id in the config file,
+// increments it, and writes the new version back to disk
+// This is useful because some of the buffer and utils functions rely on the id
+// for creating and reading files
+func (c *Config) IncrementExperimentId(confPath string) error {
+
+	// get current id
+	experimentId := c.Experiment.Id
+	match := regexp.MustCompile(`experiment-run-(\d+)`).FindStringSubmatch(experimentId)
+
+	// increment
+	if len(match) == 0 {
+		return errors.New("did not find number in experiment id")
+	}
+	num, err := strconv.Atoi(match[1])
+	if err != nil {
+		return err
+	}
+	num++
+	log.Printf("new experiment id is %d\n", num)
+
+	// write to config file
+	c.Experiment.Id = fmt.Sprintf("experiment-run-%d", num)
+	configFile, err := os.Create(confPath)
+	if err != nil {
+		return err
+	}
+	s := c.String()
+	n, err := configFile.Write([]byte(s))
+	log.Printf("wrote %d bytes while trying to increment experiment id in config file\n", n)
+	return err
 }

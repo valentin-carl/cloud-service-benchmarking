@@ -23,7 +23,7 @@ func GetNextExpNumber(dir string) (int, error) {
 
 	// use capture group to find correct experiment number
 	var nums []int
-	re := regexp.MustCompile(`experiment-run-(\d+)-0`)
+	re := regexp.MustCompile(`experiment-run-(\d+)-\d+`)
 	for _, file := range files {
 		if file.IsDir() {
 			match := re.FindStringSubmatch(file.Name())
@@ -73,6 +73,8 @@ func MoveMeasurements(fromDir string, toDir string) error {
 // ArchiveMeasurements creates a new dir and moves all measurements
 // at top level of dataDir into subdir
 func ArchiveMeasurements(dir string) error {
+
+	// TODO don't do all this stuff if there is no new data in the dataDir
 
 	// create new subdir for most recent experiment measurements
 	nextNumber, err := GetNextExpNumber(dir)
