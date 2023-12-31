@@ -15,7 +15,6 @@
     },
     "consumer": {
         "nWorkers": 50,
-        "bufferSize": 8192,
         "node": 1,
         "options": {
             "autoAck": false,

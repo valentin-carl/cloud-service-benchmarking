@@ -26,10 +26,9 @@ type Config struct {
 	} `json:"producer"`
 
 	Consumer struct {
-		NWorkers   int `json:"nWorkers"`
-		BufferSize int `json:"bufferSize"`
-		Node       int `json:"node"`
-		Options    struct {
+		NWorkers int `json:"nWorkers"`
+		Node     int `json:"node"`
+		Options  struct {
 			AutoAck     bool           `json:"autoAck"`
 			AckMultiple bool           `json:"ackMultiple"`
 			Exclusive   bool           `json:"exclusive"`

@@ -20,7 +20,7 @@ type Worker struct {
 func NewWorker(workerId string, config *config.Config) *Worker {
 	return &Worker{
 		workerId: workerId,
-		buffer:   buffer.NewBuffer(uint(config.Consumer.BufferSize)), // todo check if config field can be uint and still be parsed correctly
+		buffer:   buffer.NewBuffer(buffer.CalcOptimalBufferSize()),
 		config:   config,
 	}
 }
@@ -88,8 +88,6 @@ func (w *Worker) Consume(channel *amqp.Channel, queue amqp.Queue, done <-chan bo
 			}
 		case <-done:
 			{
-				// todo remember that break here will (I think?) only break the select and not the for loop
-				//  => check csb-temp
 				log.Println("worker", w.workerId, "is done, flushing buffer")
 				goto ClockOff
 			}
