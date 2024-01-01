@@ -26,9 +26,7 @@ func MergeMeasurements(target, dataDir, outDir string) (*os.File, error) {
 	if err != nil {
 		return nil, err
 	}
-	log.Printf("found %d potential measurement files\n", len(data))
-
-	// TODO filter data
+	log.Println("found", len(data), "potential measurement files", data)
 
 	// target file
 	t, err := os.Create(fmt.Sprintf("%s/%s", outDir, target))
@@ -41,6 +39,7 @@ func MergeMeasurements(target, dataDir, outDir string) (*os.File, error) {
 		log.Println("writing")
 		return err
 	}
+	// write column names to .csv file
 	err = write("tProducer, tConsumer")
 	if err != nil {
 		log.Println("error")
@@ -48,35 +47,48 @@ func MergeMeasurements(target, dataDir, outDir string) (*os.File, error) {
 	}
 
 	// go over all measurement files and append measurements to target file
+	log.Println("data:", data, len(data))
 	for _, x := range data {
 
 		filename := fmt.Sprintf("%s/%s", dataDir, x.Name())
+		log.Println("trying to merge measurements from", filename)
 
-		// todo maybe filter here?
+		// todo maybe filter here? => works for now, there shouldn't be any other files here
+
+		if x.IsDir() {
+			log.Println(x.Name(), "is a directory, skipping ...")
+			continue
+		}
+		if strings.HasPrefix(x.Name(), ".") {
+			log.Println(filename, "is dotfile, skipping ...")
+			continue
+		}
 
 		file, err := os.Open(filename)
 		if err != nil {
-			log.Println("error here", filename)
+			log.Println("could not open", filename)
 			return nil, err
 		}
-		defer file.Close() // todo
+		defer file.Close()
 		log.Println("appending measurements from", filename)
 
 		scanner := bufio.NewScanner(file)
 		for scanner.Scan() {
 			line := scanner.Text()
+			log.Println(filename, line)
 			if line == "tProducer, tConsumer" {
 				continue
 			}
 			err = write(line)
 			if err != nil {
+				log.Println("error writing line", line)
 				return nil, err
 			}
 		}
 	}
 
 	// merge successful
-	log.Println("merge successful")
+	log.Println("merge successful") // x doubt
 	return t, nil
 }
 
@@ -100,11 +112,15 @@ func NewMeasurements(dir string) (bool, error) {
 	// go over all files in directory
 	files, err := os.ReadDir(dir)
 	if err != nil {
+		log.Println(err)
 		return false, err
 	}
-	// check if one of them ends in .csv
+	log.Println(files)
+	// check whether file name starts with "experiment-run"
+	// initially wanted to checks whether filename ends with ".csv"
+	// but that isn't part of the filename in go :/
 	for _, file := range files {
-		if !file.IsDir() && strings.HasSuffix(file.Name(), ".csv") {
+		if !file.IsDir() && regexp.MustCompile("experiment-run").MatchString(file.Name()) {
 			return true, nil
 		}
 	}

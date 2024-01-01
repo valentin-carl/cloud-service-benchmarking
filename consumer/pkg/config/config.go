@@ -32,7 +32,6 @@ type Config struct {
 
 	Consumer struct {
 		NWorkers int `json:"nWorkers"`
-		Node     int `json:"node"`
 		Options  struct {
 			AutoAck     bool           `json:"autoAck"`
 			AckMultiple bool           `json:"ackMultiple"`

@@ -47,7 +47,7 @@ func (c *Consumer) Start(interrupt <-chan os.Signal) {
 	lastMsgChannel, err := c.GetLastMsgChannel(channel)
 
 	// create + start workers
-	stop := make(chan bool)
+	stop, ack := make(chan bool), make(chan bool)
 	workers := make([]*Worker, c.config.Consumer.NWorkers)
 	for i := 0; i < len(workers); i++ {
 		workers[i] = NewWorker(
@@ -56,14 +56,18 @@ func (c *Consumer) Start(interrupt <-chan os.Signal) {
 		)
 	}
 	for _, worker := range workers {
-		worker.Start(channel, queue, stop)
+		go worker.Start(channel, queue, stop, ack)
 		log.Printf("worker \"%s\" started\n", worker.workerId)
 	}
 
 	// wait for interrupt or signals from producers to stop the workers
-	stopWorkers := func() {
+	stopAndWaitForWorkers := func() {
 		log.Println("consumer telling workers to flush buffers and stop")
 		close(stop)
+		for i := 0; i < c.config.Consumer.NWorkers; i++ {
+			<-ack
+		}
+		log.Println("all workers acknowledged stopping")
 	}
 	nProducersDone, prodTotal := 0, c.config.Producer.NProducers
 	for {
@@ -89,14 +93,15 @@ func (c *Consumer) Start(interrupt <-chan os.Signal) {
 		}
 	}
 Done:
-	stopWorkers()
+	stopAndWaitForWorkers()
 }
 
 // GetLastMsgChannel returns a go channel the producers use to signal the end of the experiment
-// for reference: https://www.rabbitmq.com/tutorials/tutorial-three-go.html
+// for reference (this function is more or less taken for there): https://www.rabbitmq.com/tutorials/tutorial-three-go.html
 // This uses the fan-out pattern — every producer sends an 'end' message to each consumer
-// Once all of them (same number as number of producers) have been read, the experiment is done
+// Once all of them (i.e. all "end messages", same number as number of producers) have been read, the experiment is done
 // The config for these queues won't change; hence, it doesn't need to be in the config file
+// TODO test with multiple consumer nodes
 func (c *Consumer) GetLastMsgChannel(ch *amqp.Channel) (<-chan amqp.Delivery, error) {
 
 	exchange := "lastMsg"

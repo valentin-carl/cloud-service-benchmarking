@@ -42,7 +42,7 @@ func (b *Buffer) Store(workerId string, config *config.Config, measurement Measu
 	if b.ptr >= b.Size {
 		log.Println(workerId+":", "buffer full, flushing buffer")
 		// flush buffer and start with empty buffer & ptr = 0
-		err := b.Flush(workerId, config.Experiment.DataDir, fmt.Sprintf("%s-%s-%d", config.Experiment.Id, workerId, b.nFlush))
+		err := b.Flush(workerId, config.Experiment.DataDir, fmt.Sprintf("%s-%s-dump-%d.csv", config.Experiment.Id, workerId, b.nFlush))
 		if err != nil {
 			return err
 		}
@@ -108,7 +108,7 @@ func (b *Buffer) Close(workerId string, config *config.Config) error {
 		err = b.Flush(
 			workerId,
 			config.Experiment.DataDir,
-			fmt.Sprintf("%s-%s-%d", config.Experiment.Id, workerId, b.nFlush),
+			fmt.Sprintf("%s-%s-flush-%d.csv", config.Experiment.Id, workerId, b.nFlush),
 		)
 	}
 	return err

@@ -8,6 +8,8 @@ import (
 	"fmt"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"log"
+	"os"
+	"strconv"
 	"time"
 )
 
@@ -25,20 +27,26 @@ func NewWorker(workerId string, config *config.Config) *Worker {
 	}
 }
 
-func (w *Worker) Start(channel *amqp.Channel, queue amqp.Queue, stop <-chan bool) {
-	go w.Consume(channel, queue, stop)
-}
+// Start todo docs
+// - stop: consumer tells workers to stop
+// - ack: worker tells consumer that it's really done => important for writing and moving files
+func (w *Worker) Start(channel *amqp.Channel, queue amqp.Queue, stop <-chan bool, ack chan<- bool) {
 
-func (w *Worker) Consume(channel *amqp.Channel, queue amqp.Queue, done <-chan bool) {
-
-	// flush the buffer at the end
-	defer func(buffer *buffer.Buffer, workerId string, config *config.Config) {
-		utils.Handle(buffer.Close(workerId, config))
-	}(w.buffer, w.workerId, w.config)
+	// get nodeId
+	var nodeId int
+	nidStr := os.Getenv("NODEID")
+	if nidStr == "" {
+		log.Panic("nodeId not set, terminating ...")
+	} else {
+		var err error // same problem as in main
+		nodeId, err = strconv.Atoi(nidStr)
+		utils.Handle(err)
+		log.Printf("nodeId set to %d\n", nodeId)
+	}
 
 	// register as consumer at broker
 	options := w.config.Consumer.Options
-	consumerStr := fmt.Sprintf("consumer-%d-%s", w.config.Consumer.Node, w.workerId)
+	consumerStr := fmt.Sprintf("consumer-%d-%s", nodeId, w.workerId)
 	events, err := channel.Consume(
 		queue.Name,
 		consumerStr,
@@ -49,7 +57,7 @@ func (w *Worker) Consume(channel *amqp.Channel, queue amqp.Queue, done <-chan bo
 		options.Args,
 	)
 	utils.Handle(err)
-	log.Printf("worker \"%s\" successfully registered as consumer at broker, starting to record measurements\n")
+	log.Printf("worker \"%s\" successfully registered as consumer at broker, starting to record measurements\n", w.workerId)
 
 	// read + handle messages
 	for {
@@ -64,17 +72,19 @@ func (w *Worker) Consume(channel *amqp.Channel, queue amqp.Queue, done <-chan bo
 				if !ok {
 					utils.Handle(errors.New("could not read tProducer header"))
 				}
-				tProducer, ok := tProd.(int64)
+				tProducerStr, ok := tProd.(string)
 				if !ok {
 					utils.Handle(errors.New("could not transform tProducer to int64"))
 				}
+				tProducer, err := strconv.Atoi(tProducerStr)
+				utils.Handle(err)
 
 				// store measurement in buffer
 				err = w.buffer.Store(
 					w.workerId,
 					w.config,
 					buffer.Measurement{
-						TProducer: tProducer,
+						TProducer: int64(tProducer),
 						TConsumer: time.Now().UnixMilli(),
 					},
 				)
@@ -86,7 +96,7 @@ func (w *Worker) Consume(channel *amqp.Channel, queue amqp.Queue, done <-chan bo
 					utils.Handle(err)
 				}
 			}
-		case <-done:
+		case <-stop:
 			{
 				log.Println("worker", w.workerId, "is done, flushing buffer")
 				goto ClockOff
@@ -94,5 +104,8 @@ func (w *Worker) Consume(channel *amqp.Channel, queue amqp.Queue, done <-chan bo
 		}
 	}
 ClockOff:
+	// flush the buffer at the end
+	utils.Handle(w.buffer.Close(w.workerId, w.config))
+	ack <- true
 	log.Println("worker", w.workerId, "is going home")
 }

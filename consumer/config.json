@@ -1,6 +1,6 @@
 {
   "broker": {
-    "url": "amqp://jeff:jeff@host.docker.internal:5672",
+    "url": "amqp://jeff:jeff@localhost:5672",
     "queue": {
       "name": "queue",
       "durable": false,
@@ -11,11 +11,10 @@
     }
   },
   "producer": {
-    "nProducers": 25
+    "nProducers": 1
   },
   "consumer": {
-    "nWorkers": 50,
-    "node": 1,
+    "nWorkers": 2,
     "options": {
       "autoAck": false,
       "ackMultiple": false,

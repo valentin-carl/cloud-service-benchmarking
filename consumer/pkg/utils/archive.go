@@ -13,6 +13,7 @@ import (
 // GetNextExpNumber looks at all subdirectories in the DataDir (technically any)
 // and check how many subdirectories with old data there are
 // the subdirectory-names follow the pattern "experiment-run-<experiment number>-<node id>"
+// todo remove
 func GetNextExpNumber(dir string) (int, error) {
 
 	// read all files + directories in dataDir
@@ -23,7 +24,7 @@ func GetNextExpNumber(dir string) (int, error) {
 
 	// use capture group to find correct experiment number
 	var nums []int
-	re := regexp.MustCompile(`experiment-run-(\d+)-\d+`)
+	re := regexp.MustCompile(`experiment-run-(\d+)-.*`)
 	for _, file := range files {
 		if file.IsDir() {
 			match := re.FindStringSubmatch(file.Name())
@@ -72,10 +73,10 @@ func MoveMeasurements(fromDir string, toDir string) error {
 
 // ArchiveMeasurements creates a new dir and moves all measurements
 // at top level of dataDir into subdir
-func ArchiveMeasurements(dir string) error {
+func ArchiveMeasurements(dataDir, experimentId string, nodeId int) error {
 
 	// check if this actually has to be run
-	if found, err := NewMeasurements(dir); err == nil && !found {
+	if found, err := NewMeasurements(dataDir); err == nil && !found {
 		log.Println("no new measurements found, stopping early")
 		return nil
 	} else if err != nil {
@@ -84,20 +85,15 @@ func ArchiveMeasurements(dir string) error {
 	}
 
 	// create new subdir for most recent experiment measurements
-	nextNumber, err := GetNextExpNumber(dir)
-	if err != nil {
-		return err
-	}
-	newDirectoryName := fmt.Sprintf("experiment-run-%d-0", nextNumber)
-	newDirectoryPath := filepath.Join(dir, newDirectoryName)
-	err = os.Mkdir(newDirectoryPath, os.ModePerm)
+	subdir := fmt.Sprintf("%s/%s-node-%d", dataDir, experimentId, nodeId)
+	err := os.Mkdir(subdir, os.ModePerm)
 	if err != nil {
 		return err
 	}
 	log.Println("create new dir for measurements")
 
 	// move the data into new subdir
-	err = MoveMeasurements(dir, newDirectoryPath)
+	err = MoveMeasurements(dataDir, subdir)
 	log.Println("moved measurements to new dir")
 	return err
 }
