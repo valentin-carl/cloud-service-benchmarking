@@ -7,7 +7,6 @@ import (
 type Server struct {
 	ListenAddress string
 	FileDir       string
-	fileServer    http.Handler
 }
 
 // Remember to open ports on VM
@@ -16,7 +15,6 @@ func NewServer(listenAddr, fileDir string) *Server {
 	return &Server{
 		ListenAddress: listenAddr,
 		FileDir:       fileDir,
-		fileServer:    http.FileServer(http.Dir(fileDir)),
 	}
 }
 
