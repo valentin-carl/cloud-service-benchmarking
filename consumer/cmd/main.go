@@ -3,6 +3,7 @@ package main
 import (
 	"consumer/pkg/config"
 	"consumer/pkg/consumer"
+	"consumer/pkg/server"
 	"consumer/pkg/utils"
 	"log"
 	"os"
@@ -64,8 +65,11 @@ func main() {
 	err = conf.IncrementExperimentId(configFile)
 	utils.Handle(err)
 
-	// TODO idea: create file server here to make downloading the data from a vm easy
-	// 	should be pretty straightforward in go
+	// make downloads via http possible => download data from VMs after experiment is done
+	// e.g., curl localhost:80/download/out/experiment-run-0-node-0.csv
+	// hint: using localhost:80/download in browser allows you to explore all files
+	s := server.NewServer(":80", "./")
+	utils.Handle(s.Serve())
 
 	log.Printf("the end :-)")
 }
