@@ -8,6 +8,8 @@ import (
 	"os"
 	"path"
 	"producer/pkg/config"
+	"regexp"
+	"strconv"
 )
 
 const (
@@ -48,6 +50,10 @@ func (g *Generator) GenerateMessages() [][]byte {
 	return msgs
 }
 
+// Store will create a subdirectory of <WorkloadDir> and store a set of messages
+// The set of messages will be split into <nSplit> different files
+// The idea is to have one workload file per worker, and store/load the workloads
+// in the same way to make the experiment as repeatable as possible
 func (g *Generator) Store(msgs [][]byte, subdir string, nSplit int) error {
 
 	// validate inputs
@@ -105,4 +111,30 @@ func (g *Generator) Store(msgs [][]byte, subdir string, nSplit int) error {
 	}
 
 	return nil
+}
+
+// GetWorkloadName looks at the config file to find a good dir name to store workload in
+func (g *Generator) GetWorkloadName() (name string, err error) {
+
+	var id int
+
+	// find current experiment run number
+	matches := regexp.MustCompile(`experiment-run-(\d+)`).FindStringSubmatch(g.config.Experiment.Id)
+	if len(matches) >= 2 {
+		log.Println(matches)
+		id, err = strconv.Atoi(matches[1])
+		if err != nil {
+			log.Println("error converting match from string to int", matches[1])
+			return
+		}
+	} else {
+		log.Println("no match found")
+		err = errors.New("no match found")
+		return
+	}
+
+	// generate workload name
+	name = fmt.Sprintf("worldload-run-%d", id)
+	log.Printf("generated workload name: '%s'\n", name)
+	return
 }
