@@ -1,13 +1,13 @@
 package workload
 
 import (
+	"benchmark/lib/config"
 	"errors"
 	"fmt"
 	"log"
 	"math/rand"
 	"os"
 	"path"
-	"producer/pkg/config"
 	"regexp"
 	"strconv"
 )
