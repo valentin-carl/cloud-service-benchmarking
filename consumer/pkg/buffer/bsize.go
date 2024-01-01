@@ -12,8 +12,9 @@ const (
 	measurementSize  = 2 * 8 // 2x int64 == 16 bytes
 )
 
-// CalcOptimalBufferSize uses the systems block size to calculate
+// CalcOptimalBufferSize uses the system's block size to calculate
 // how many elements a buffer can hold to fill exactly one block
+// TODO subtract csv column titles
 func CalcOptimalBufferSize() uint {
 	bs, err := GetBlockSize()
 	utils.Handle(err)

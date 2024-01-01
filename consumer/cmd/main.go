@@ -44,8 +44,8 @@ func main() {
 	signal.Notify(c, os.Interrupt)
 	cons.Start(c)
 
-	// Note: the consumer waits until all workers are completely done
-	// -> At this point, all measurements should be written to disk
+	// note: the consumer waits until all workers are completely done
+	// -> at this point, all measurements should be written to disk
 
 	// merge all measurements into a single csv file containing all measurements
 	// filename pattern "experiment-run-<experiment id>-node-<node id>"
