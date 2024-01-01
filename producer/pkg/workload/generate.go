@@ -134,7 +134,7 @@ func (g *Generator) GetWorkloadName() (name string, err error) {
 	}
 
 	// generate workload name
-	name = fmt.Sprintf("worldload-run-%d", id)
+	name = fmt.Sprintf("workload-run-%d", id)
 	log.Printf("generated workload name: '%s'\n", name)
 	return
 }
