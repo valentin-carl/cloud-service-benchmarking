@@ -118,7 +118,6 @@ func NewMeasurements(dir string) (bool, error) {
 	log.Println(files)
 	// check whether file name starts with "experiment-run"
 	// initially wanted to checks whether filename ends with ".csv"
-	// but that isn't part of the filename in go :/
 	for _, file := range files {
 		if !file.IsDir() && regexp.MustCompile("experiment-run").MatchString(file.Name()) {
 			return true, nil
