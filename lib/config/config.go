@@ -27,7 +27,11 @@ type Config struct {
 	} `json:"broker"`
 
 	Producer struct {
-		NProducers int `json:"nProducers"`
+		NWorkers int `json:"nWorkers"`
+		Options  struct {
+			Mandatory bool `json:"mandatory"`
+			Immediate bool `json:"immediate"`
+		} `json:"options"`
 	} `json:"producer"`
 
 	Consumer struct {

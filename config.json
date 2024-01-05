@@ -11,7 +11,11 @@
     }
   },
   "producer": {
-    "nProducers": 1
+    "nWorkers": 1,
+    "options": {
+      "mandatory": false,
+      "immediate": false
+    }
   },
   "consumer": {
     "nWorkers": 2,
