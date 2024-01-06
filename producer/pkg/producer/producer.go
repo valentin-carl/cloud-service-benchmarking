@@ -68,6 +68,7 @@ func (p *Producer) Start(workloadPath string, interrupt <-chan os.Signal) {
 	// todo also do this at consumer => see issue on github
 	var wg sync.WaitGroup
 	for i := 0; i < p.config.Producer.NWorkers; i++ {
+		go workers[i].Start()
 		go DistributeWorkload(workloads[i], msgChannels[i], interrupt, &wg)
 	}
 	wg.Wait()

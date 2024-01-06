@@ -11,11 +11,13 @@ import (
 
 type Worker struct {
 	workerId string
+	messages <-chan []byte
 	config   *config.Config
 	channel  *amqp.Channel
+	queue    amqp.Queue
 }
 
-func NewWorker(workerId string, config *config.Config, connection *amqp.Connection) *Worker {
+func NewWorker(workerId string, messages <-chan []byte, config *config.Config, connection *amqp.Connection, queue amqp.Queue) *Worker {
 
 	// every worker has a new channel, but they share one connection
 	// channels aren't thread safe https://stackoverflow.com/questions/47888730
@@ -25,8 +27,10 @@ func NewWorker(workerId string, config *config.Config, connection *amqp.Connecti
 
 	return &Worker{
 		workerId,
+		messages,
 		config,
 		channel,
+		queue,
 	}
 }
 
@@ -34,47 +38,28 @@ func NewWorker(workerId string, config *config.Config, connection *amqp.Connecti
 // - workload: get messages one by one from the producer, stop once channel closes
 // - ack: tell producer that this worker is done, do so once workload channel is closed
 // => producer sends "end" to consumer once all worker acknowledged that they're done
-func (w *Worker) Start(channel *amqp.Channel, queue amqp.Queue, messages <-chan []byte, ack chan<- bool) {
-
-	// todo remove later on
-	messageCounter := 0
-
-	// the worker is done once the producer closes this channel and all messages are taken from it
-	for message := range messages {
-
-		log.Printf("%s sending message %d to consumer\n", w.workerId, messageCounter)
-
-		// create publishing to send message and current timestamp
-		publishing := amqp.Publishing{
-			Body: message,
-		}
+func (w *Worker) Start() {
+	defer w.channel.Close()
+	for msg := range w.messages {
+		log.Println(w.workerId, "sending message..")
 		headers := make(amqp.Table)
 		headers["tProducer"] = time.Now().UnixMilli()
-		publishing.Headers = headers
-
-		// send to broker
-		err := channel.PublishWithContext(
+		// add timestamp as header 'tProducer'
+		// => this avoids having to use an external plugin that only
+		// has second-granularity
+		pub := amqp.Publishing{
+			Headers: headers,
+			Body:    msg,
+		}
+		err := w.channel.PublishWithContext(
 			context.Background(),
-			"", // publish to default exchange, routing key == queue name gets message to the consumer
-			queue.Name,
-			w.config.Producer.Options.Mandatory,
-			w.config.Producer.Options.Immediate,
-			publishing,
+			"",           // "" means message is sent to default exchange
+			w.queue.Name, // routing key == queue name gets message to the right place
+			false,
+			false,
+			pub, // actual message
 		)
 		utils.Handle(err)
-
-		// todo remove later on
-		messageCounter++
 	}
-
-	// reached once the messages channel is closed
-	log.Println(w.workerId, "received closed channel, stopping")
-
-	// tell consumer this worker is done
-	ack <- true
-}
-
-func (w *Worker) Close() error {
-	log.Println(w.workerId, "was closed")
-	return w.channel.Close()
+	log.Printf("%s: messages channel closed, stopping..\n", w.workerId)
 }
