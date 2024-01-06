@@ -18,7 +18,7 @@ type Workload [][]byte
 // and to ensure that the workers get their messages in the same order etc. Caveat:
 // we can't really reproduce the OS's and the go-runtime's scheduling  decisions,
 // but their influence should not be too large (knock on wood!).
-func LoadWorkloads(messageSize uint, dir string) ([]Workload, error) {
+func LoadWorkloads(dir string) ([]Workload, error) {
 
 	// check if dir exists
 	p := path.Join(WorkloadDir, dir)
@@ -69,10 +69,12 @@ func LoadWorkloads(messageSize uint, dir string) ([]Workload, error) {
 		scanner := bufio.NewScanner(currentWl)
 		for scanner.Scan() {
 			log.Println(len(scanner.Bytes()), string(scanner.Bytes()))
-			msg := scanner.Bytes()[:messageSize] // remove trailing newline character
+			msg := scanner.Bytes()
+			msg = msg[:len(msg)-1] // remove trailing newline character
 			workload = append(workload, msg)
 		}
-		workloads[i] = workload
+		// this is to ensure the worker-workload-order in repeatable
+		workloads[workerId] = workload
 	}
 
 	// return
