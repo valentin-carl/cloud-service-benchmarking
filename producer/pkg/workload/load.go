@@ -43,7 +43,7 @@ func LoadWorkloads(dir string) ([]Workload, error) {
 
 	// read workloads from files into slices
 	workloads := make([]Workload, len(wlfiles))
-	for i, file := range wlfiles {
+	for _, file := range wlfiles {
 
 		// get worker number to find slice index
 		matches := regexp.MustCompile(`workload-worker-(\d+)`).FindStringSubmatch(file.Name())
