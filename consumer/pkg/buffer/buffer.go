@@ -1,8 +1,8 @@
 package buffer
 
 import (
-	"consumer/pkg/config"
-	"consumer/pkg/utils"
+	"benchmark/lib/config"
+	"benchmark/lib/utils"
 	"errors"
 	"fmt"
 	"log"

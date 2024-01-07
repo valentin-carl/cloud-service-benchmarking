@@ -45,8 +45,7 @@ func (w *Worker) Start() {
 		headers := make(amqp.Table)
 		headers["tProducer"] = time.Now().UnixMilli()
 		// add timestamp as header 'tProducer'
-		// => this avoids having to use an external plugin that only
-		// has second-granularity
+		// => this avoids having to use an external plugin that isn't precise enough
 		pub := amqp.Publishing{
 			Headers: headers,
 			Body:    msg,

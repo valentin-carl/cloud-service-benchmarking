@@ -1,10 +1,10 @@
 package main
 
 import (
-	"consumer/pkg/config"
+	"benchmark/lib/config"
+	"benchmark/lib/utils"
 	"consumer/pkg/consumer"
 	"consumer/pkg/server"
-	"consumer/pkg/utils"
 	"log"
 	"os"
 	"os/signal"
@@ -76,17 +76,17 @@ func main() {
 
 /*
 Notizen
-- config: entweder länge oder anzahl nachrichten vorgeben, damit throughput
+- config: entweder dauer oder anzahl nachrichten vorgeben, damit throughput
 	gemessen wird; wenn beides vorgegeben, gebe ich den max throughput ja vor
 => producer bauen der beides kann; dann bei support fragen was besser ist
 
 Producer:
-- workload generieren/laden trennen, workload speichern
 - beide modi implementieren
 A: zeit fest, wieviele nachrichten gehen durch?
 B: anzahl nachrichten fest, wie lange dauert das?
 - producer schickt am ende eine quit nachricht an eine andere queue?
 	die hört sich der consumer an und beendet die worker?
+=> choose option B, that's passive income
 */
 
 /*

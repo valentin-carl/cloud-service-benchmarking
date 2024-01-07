@@ -1,9 +1,9 @@
 package consumer
 
 import (
+	"benchmark/lib/config"
+	"benchmark/lib/utils"
 	buffer "consumer/pkg/buffer"
-	"consumer/pkg/config"
-	"consumer/pkg/utils"
 	"errors"
 	"fmt"
 	amqp "github.com/rabbitmq/amqp091-go"

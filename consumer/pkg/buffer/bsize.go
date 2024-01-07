@@ -1,7 +1,7 @@
 package buffer
 
 import (
-	"consumer/pkg/utils"
+	"benchmark/lib/utils"
 	"log"
 	"os/exec"
 	"runtime"

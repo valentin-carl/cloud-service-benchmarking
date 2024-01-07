@@ -1,8 +1,8 @@
 package consumer
 
 import (
-	"consumer/pkg/config"
-	"consumer/pkg/utils"
+	"benchmark/lib/config"
+	"benchmark/lib/utils"
 	"fmt"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"log"
@@ -69,7 +69,7 @@ func (c *Consumer) Start(interrupt <-chan os.Signal) {
 		}
 		log.Println("all workers acknowledged stopping")
 	}
-	nProducersDone, prodTotal := 0, c.config.Producer.NProducers
+	nProducersDone, prodTotal := 0, c.config.Producer.NWorkers
 	for {
 		select {
 		case msg := <-lastMsgChannel:
