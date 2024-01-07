@@ -56,7 +56,8 @@ type Config struct {
 		DataDir        string `json:"dataDir"`
 		OutDir         string `json:"outDir"`
 		Duration       int    `json:"duration"`
-		NMessagesTotal int    `json:"nMessagesTotal"`
+		NMessagesTotal uint   `json:"nMessagesTotal"`
+		MessageSize    uint   `json:"messageSize"` // todo make sure uint works
 	} `json:"experiment"`
 }
 

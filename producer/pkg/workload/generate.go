@@ -18,6 +18,8 @@ const (
 	WorkloadDir = "./workloads/"
 )
 
+type Workload [][]byte
+
 type Generator struct {
 	MessageSize uint
 	NMessages   uint
@@ -42,8 +44,8 @@ func (g *Generator) GenerateMessage() []byte {
 }
 
 // GenerateMessages generates multiple messages
-func (g *Generator) GenerateMessages() [][]byte {
-	msgs := make([][]byte, g.NMessages)
+func (g *Generator) GenerateMessages() Workload {
+	msgs := make(Workload, g.NMessages)
 	for i := 0; i < len(msgs); i++ {
 		msgs[i] = g.GenerateMessage()
 	}
@@ -54,7 +56,7 @@ func (g *Generator) GenerateMessages() [][]byte {
 // The set of messages will be split into <nSplit> different files
 // The idea is to have one workload file per worker, and store/load the workloads
 // in the same way to make the experiment as repeatable as possible
-func (g *Generator) Store(msgs [][]byte, subdir string, nSplit int) error {
+func (g *Generator) Store(msgs Workload, subdir string, nSplit int) error {
 
 	// validate inputs
 	if nSplit <= 0 {

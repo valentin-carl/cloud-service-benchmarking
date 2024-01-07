@@ -63,9 +63,7 @@ func (p *Producer) Start(workloadPath string, interrupt <-chan os.Signal) {
 	}
 
 	// start all workers and tell them which messages to send
-	// todo what happens if there is an interrupt signal while this goroutine waits for the wait group?
-	//  at least the workers etc. will stop
-	// todo also do this at consumer => see issue on github
+	// todo also use waitgroup in consumer => see issue on github
 	var wg sync.WaitGroup
 	for i := 0; i < p.config.Producer.NWorkers; i++ {
 		go workers[i].Start()
@@ -78,7 +76,7 @@ func (p *Producer) Start(workloadPath string, interrupt <-chan os.Signal) {
 	// send "end" message to lastMsg exchange with fan-out
 	// => tells all consumers that this producer is done,
 	// they wait for all to be done before stopping
-	err = p.SendLastMsg(channel)
+	err = p.sendLastMsg(channel)
 	utils.Handle(err)
 	log.Println("send \"end\" to all consumers")
 }
@@ -102,12 +100,14 @@ func DistributeWorkload(workload workload.Workload, messages chan<- []byte, inte
 	}
 }
 
-func (p *Producer) SendLastMsg(channel *amqp.Channel) error {
+func (p *Producer) sendLastMsg(channel *amqp.Channel) error {
 
-	const lastMsg = "end"
+	const (
+		exchange = "lastMsg"
+		lastMsg  = "end"
+	)
 
 	// declare the exchange
-	exchange := "lastMsg"
 	err := channel.ExchangeDeclare(
 		exchange,
 		"fanout",

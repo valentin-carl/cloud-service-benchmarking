@@ -37,6 +37,7 @@
     "dataDir": "./data",
     "outDir": "./out",
     "duration": 360,
-    "nMessagesTotal": 5000000
+    "nMessagesTotal": 5000000,
+    "messageSize": 1024
   }
 }

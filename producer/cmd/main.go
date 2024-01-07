@@ -2,61 +2,64 @@ package main
 
 import (
 	"benchmark/lib"
+	"benchmark/lib/config"
 	"benchmark/lib/utils"
+	"errors"
+	"fmt"
 	"log"
+	"os"
+	"os/signal"
+	"producer/pkg/producer"
 	"producer/pkg/workload"
 )
 
+const (
+	configPath = "../config.json"
+)
+
+// todo for experiment: reuse same workload 3 times
+
 func main() {
 
+	// quick sanity check that custom library works
 	lib.SayHi()
 
-	//	messageSize := uint(math.Pow(2, 10))
-	messageSize := uint(32)
-	log.Println(messageSize)
+	// verify config can be loaded
+	c := config.Load("../config.json")
+	fmt.Println(c.String())
 
-	/*conf := config.Load("./config.json")
-
-	g := workload.NewGenerator(
-		messageSize,
-		40,
-		conf,
-	)
-	log.Println(g)
-
-	msgs := g.GenerateMessages()
-	for _, msg := range msgs {
-		log.Println(string(msg))
+	// maybe generate new workload
+	var workloadPath string
+	if c.Workload.Generate && c.Workload.WorkloadPath == "" {
+		// generate new wl
+		log.Println("generating new workload")
+		generator := workload.NewGenerator(c.Experiment.MessageSize, c.Experiment.NMessagesTotal, c)
+		wl := generator.GenerateMessages()
+		wlName, err := generator.GetWorkloadName()
+		utils.Handle(err)
+		err = generator.Store(wl, wlName, c.Producer.NWorkers)
+		utils.Handle(err)
+		workloadPath = fmt.Sprintf("workloads/%s", wlName) // todo test
+	} else if !c.Workload.Generate && c.Workload.WorkloadPath != "" {
+		// load existing one
+		// => producer loads it on its own
+		log.Println("using existing workload", c.Workload.WorkloadPath)
+		workloadPath = c.Workload.WorkloadPath
+	} else {
+		// not generating a new workload and not specifying a new one won't work
+		utils.Handle(errors.New("possible workload-misconfiguration detected"))
 	}
 
-	// todo check if workload-something in config is empty => generate new workload
-	name, err := g.GetWorkloadName()
-	utils.Handle(err)
-	utils.Handle(g.Store(msgs, name, 10))
+	// todo test until here
 
-	// increment experiment id for consistency with other nodes + filenames of stored workload
-	err = conf.IncrementExperimentId("./config.json")
-	utils.Handle(err)*/
+	// create new producer
+	log.Println("workloadPath:", workloadPath) // todo test for generated + loaded
+	interrupt := make(chan os.Signal)
+	signal.Notify(interrupt, os.Interrupt)
+	producer := producer.NewProducer(c)
+	log.Println("starting producer")
+	producer.Start(workloadPath, interrupt)
 
-	wls, err := workload.LoadWorkloads(messageSize, "workload-run-3")
-	utils.Handle(err)
-
-	log.Println("aaa", len(wls))
-	for i, wl := range wls {
-		log.Println(i, "wl ========")
-		for _, msg := range wl {
-			log.Println(string(msg))
-		}
-	}
+	// experiment is over :-)
+	log.Println("all done")
 }
-
-/*
-todo
-- in config einstellen ob workload geladen oder neu generiert werden soll
-	=> producer soll immer als in put workload/[][][]byte bekommen, dann auch worker aufteilen
-- Wie sicherstellen dass es nur eine config.json gibt?
-	=> for now: in root dir, für deployment env var mit config path?
-	- weiteres problem, die dateistruktur wegen lib muss dann auch auf den nodes sein
-		=> würde aber config.json auf root level einfach machen
-- lib auch in consumer benutzen
-*/

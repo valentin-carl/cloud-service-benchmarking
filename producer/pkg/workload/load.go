@@ -10,8 +10,6 @@ import (
 	"strconv"
 )
 
-type Workload [][]byte
-
 // LoadWorkloads takes the messages from a subdirectory of /workloads/ and loads
 // them into a workload object. The order and workerIds are persevered across
 // experiment runs, which allows us to repeat the experiment with the same workload
