@@ -1,7 +1,6 @@
 package main
 
 import (
-	"benchmark/lib"
 	"benchmark/lib/config"
 	"benchmark/lib/utils"
 	"errors"
@@ -20,9 +19,6 @@ const (
 // todo for experiment: reuse same workload 3 times
 
 func main() {
-
-	// quick sanity check that custom library works
-	lib.SayHi()
 
 	// verify config can be loaded
 	c := config.Load("../config.json")
