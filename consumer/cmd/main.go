@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	configFile = "./config.json"
+	configFile = "../config.json"
 )
 
 var (
