@@ -69,7 +69,7 @@ func (c *Consumer) Start(interrupt <-chan os.Signal) {
 		}
 		log.Println("all workers acknowledged stopping")
 	}
-	nProducersDone, prodTotal := 0, c.config.Producer.NWorkers
+	nProducersDone, prodTotal := 0, c.config.Producer.NProducers
 	for {
 		select {
 		case msg := <-lastMsgChannel:

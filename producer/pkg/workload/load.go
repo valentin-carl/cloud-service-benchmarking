@@ -66,7 +66,7 @@ func LoadWorkloads(dir string) ([]Workload, error) {
 		}
 		scanner := bufio.NewScanner(currentWl)
 		for scanner.Scan() {
-			log.Println(len(scanner.Bytes()), string(scanner.Bytes()))
+			//log.Println(len(scanner.Bytes()), string(scanner.Bytes()))
 			msg := scanner.Bytes()
 			msg = msg[:len(msg)-1] // remove trailing newline character
 			workload = append(workload, msg)

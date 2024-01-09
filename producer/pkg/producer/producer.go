@@ -10,6 +10,7 @@ import (
 	"os"
 	"producer/pkg/workload"
 	"sync"
+	"time"
 )
 
 type Producer struct {
@@ -64,8 +65,11 @@ func (p *Producer) Start(workloadPath string, interrupt <-chan os.Signal) {
 
 	// start all workers and tell them which messages to send
 	// todo also use waitgroup in consumer => see issue on github
+	log.Println(len(workers), workers)
 	var wg sync.WaitGroup
+	wg.Add(p.config.Producer.NWorkers)
 	for i := 0; i < p.config.Producer.NWorkers; i++ {
+		log.Println(len(workloads[i]))
 		go workers[i].Start()
 		go DistributeWorkload(workloads[i], msgChannels[i], interrupt, &wg)
 	}
@@ -86,9 +90,10 @@ func DistributeWorkload(workload workload.Workload, messages chan<- []byte, inte
 
 	log.Println("distributing workload..")
 
-	wg.Add(1)
 	defer wg.Done()
 	defer close(messages) // tell workers to stop
+
+	time.Sleep(5 * time.Second)
 
 	for i, msg := range workload {
 		select {

@@ -11,14 +11,15 @@
     }
   },
   "producer": {
-    "nWorkers": 1,
+    "NProducers": 1,
+    "nWorkers": 5,
     "options": {
       "mandatory": false,
       "immediate": false
     }
   },
   "consumer": {
-    "nWorkers": 2,
+    "nWorkers": 10,
     "options": {
       "autoAck": false,
       "ackMultiple": false,
@@ -37,7 +38,7 @@
     "dataDir": "./data",
     "outDir": "./out",
     "duration": 360,
-    "nMessagesTotal": 5000000,
+    "nMessagesTotal": 1000000,
     "messageSize": 1024
   }
 }

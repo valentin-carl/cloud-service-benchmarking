@@ -35,7 +35,8 @@ func main() {
 		utils.Handle(err)
 		err = generator.Store(wl, wlName, c.Producer.NWorkers)
 		utils.Handle(err)
-		workloadPath = fmt.Sprintf("workloads/%s", wlName) // todo test
+		//workloadPath = fmt.Sprintf("workloads/%s", wlName) // todo test
+		workloadPath = wlName
 	} else if !c.Workload.Generate && c.Workload.WorkloadPath != "" {
 		// load existing one
 		// => producer loads it on its own
@@ -46,6 +47,7 @@ func main() {
 		utils.Handle(errors.New("possible workload-misconfiguration detected"))
 	}
 
+	log.Println(workloadPath)
 	// todo test until here
 
 	// create new producer

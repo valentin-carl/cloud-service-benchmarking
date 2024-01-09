@@ -69,14 +69,16 @@ func (w *Worker) Start(channel *amqp.Channel, queue amqp.Queue, stop <-chan bool
 				err := event.Headers.Validate()
 				utils.Handle(err)
 				tProd, ok := event.Headers["tProducer"]
+				log.Println(tProd)
 				if !ok {
 					utils.Handle(errors.New("could not read tProducer header"))
 				}
-				tProducerStr, ok := tProd.(string)
+				//				tProducerStr, ok := tProd.(string)
+				tProducer, ok := tProd.(int64)
 				if !ok {
 					utils.Handle(errors.New("could not transform tProducer to int64"))
 				}
-				tProducer, err := strconv.Atoi(tProducerStr)
+				//tProducer, err := strconv.Atoi(tProducerStr)
 				utils.Handle(err)
 
 				// store measurement in buffer
@@ -84,7 +86,8 @@ func (w *Worker) Start(channel *amqp.Channel, queue amqp.Queue, stop <-chan bool
 					w.workerId,
 					w.config,
 					buffer.Measurement{
-						TProducer: int64(tProducer),
+						//						TProducer: int64(tProducer),
+						TProducer: tProducer,
 						TConsumer: time.Now().UnixMilli(),
 					},
 				)

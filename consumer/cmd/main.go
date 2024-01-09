@@ -69,8 +69,11 @@ func main() {
 	// e.g., curl localhost:80/download/out/experiment-run-0-node-0.csv
 	// hint: using localhost:80/download in browser allows you to explore all files
 	s := server.NewServer(":80", "./")
-	utils.Handle(s.Serve())
-
+	go func() {
+		err := s.Serve()
+		utils.Handle(err)
+	}()
+	log.Println(<-c)
 	log.Printf("the end :-)")
 }
 
