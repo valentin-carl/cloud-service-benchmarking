@@ -17,20 +17,29 @@ type Worker struct {
 	workerId string
 	buffer   *buffer.Buffer
 	config   *config.Config
+	channel  *amqp.Channel
+	queue    amqp.Queue
 }
 
-func NewWorker(workerId string, config *config.Config) *Worker {
+func NewWorker(connection *amqp.Connection, workerId string, config *config.Config, queue amqp.Queue) *Worker {
+
+	// crate a new channel for each worker because they're not thread-safe!
+	channel, err := connection.Channel()
+	utils.Handle(err)
+
 	return &Worker{
 		workerId: workerId,
 		buffer:   buffer.NewBuffer(buffer.CalcOptimalBufferSize()),
 		config:   config,
+		channel:  channel,
+		queue:    queue,
 	}
 }
 
 // Start todo docs
 // - stop: consumer tells workers to stop
 // - ack: worker tells consumer that it's really done => important for writing and moving files
-func (w *Worker) Start(channel *amqp.Channel, queue amqp.Queue, stop <-chan bool, ack chan<- bool) {
+func (w *Worker) Start(stop <-chan bool) {
 
 	// get nodeId
 	var nodeId int
@@ -47,8 +56,8 @@ func (w *Worker) Start(channel *amqp.Channel, queue amqp.Queue, stop <-chan bool
 	// register as consumer at broker
 	options := w.config.Consumer.Options
 	consumerStr := fmt.Sprintf("consumer-%d-%s", nodeId, w.workerId)
-	events, err := channel.Consume(
-		queue.Name,
+	events, err := w.channel.Consume(
+		w.queue.Name,
 		consumerStr,
 		options.AutoAck,
 		options.Exclusive,
@@ -73,7 +82,7 @@ func (w *Worker) Start(channel *amqp.Channel, queue amqp.Queue, stop <-chan bool
 				if !ok {
 					utils.Handle(errors.New("could not read tProducer header"))
 				}
-				//				tProducerStr, ok := tProd.(string)
+				//tProducerStr, ok := tProd.(string)
 				tProducer, ok := tProd.(int64)
 				if !ok {
 					utils.Handle(errors.New("could not transform tProducer to int64"))
@@ -86,7 +95,7 @@ func (w *Worker) Start(channel *amqp.Channel, queue amqp.Queue, stop <-chan bool
 					w.workerId,
 					w.config,
 					buffer.Measurement{
-						//						TProducer: int64(tProducer),
+						//TProducer: int64(tProducer),
 						TProducer: tProducer,
 						TConsumer: time.Now().UnixMilli(),
 					},
@@ -109,6 +118,5 @@ func (w *Worker) Start(channel *amqp.Channel, queue amqp.Queue, stop <-chan bool
 ClockOff:
 	// flush the buffer at the end
 	utils.Handle(w.buffer.Close(w.workerId, w.config))
-	ack <- true
 	log.Println("worker", w.workerId, "is going home")
 }

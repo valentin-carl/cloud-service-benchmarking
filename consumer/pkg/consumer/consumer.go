@@ -7,6 +7,7 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 	"log"
 	"os"
+	"sync"
 )
 
 type Consumer struct {
@@ -24,10 +25,12 @@ func (c *Consumer) Start(interrupt <-chan os.Signal) {
 	// connect to the broker
 	connection, err := amqp.Dial(c.config.Broker.URL)
 	utils.Handle(err)
+	defer connection.Close()
 
 	// create a channel to access api
 	channel, err := connection.Channel()
 	utils.Handle(err)
+	defer channel.Close()
 
 	// create the queue if it doesn't exist yet
 	qc := c.config.Broker.Queue
@@ -47,28 +50,34 @@ func (c *Consumer) Start(interrupt <-chan os.Signal) {
 	lastMsgChannel, err := c.GetLastMsgChannel(channel)
 
 	// create + start workers
-	stop, ack := make(chan bool), make(chan bool)
+	stop := make(chan bool)
 	workers := make([]*Worker, c.config.Consumer.NWorkers)
 	for i := 0; i < len(workers); i++ {
 		workers[i] = NewWorker(
+			connection,
 			fmt.Sprintf("worker-%d", i),
 			c.config,
+			queue,
 		)
 	}
+
+	var wg sync.WaitGroup
+
+	// start the workers
 	for _, worker := range workers {
-		go worker.Start(channel, queue, stop, ack)
-		log.Printf("worker \"%s\" started\n", worker.workerId)
+		wId := worker.workerId
+		worker := worker
+		go func() {
+			wg.Add(1)
+			log.Printf("worker \"%s\" started\n", wId)
+			worker.Start(stop)
+			wg.Done()
+		}()
 	}
 
-	// wait for interrupt or signals from producers to stop the workers
-	stopAndWaitForWorkers := func() {
-		log.Println("consumer telling workers to flush buffers and stop")
-		close(stop)
-		for i := 0; i < c.config.Consumer.NWorkers; i++ {
-			<-ack
-		}
-		log.Println("all workers acknowledged stopping")
-	}
+	// each producer has to send "end" to each (i.e. also to this) consumer
+	// count how many times that happens and stop workers when all producers are done
+	// also: we could get an interrupt to which we need to pay attention
 	nProducersDone, prodTotal := 0, c.config.Producer.NProducers
 	for {
 		select {
@@ -77,23 +86,22 @@ func (c *Consumer) Start(interrupt <-chan os.Signal) {
 				if string(msg.Body) == "end" {
 					nProducersDone++
 					log.Printf("received \"end\" from producer, %d/%d producers are done\n", nProducersDone, prodTotal)
-					if nProducersDone == prodTotal {
-						log.Println("all producers are done, stopping workers")
-						goto Done
-					}
-				} else {
-					log.Println("consumer got message != \"end\" through lastMsgChannel:", string(msg.Body))
+					goto TheEnd
 				}
 			}
 		case <-interrupt:
 			{
 				log.Println("consumer was interrupted, stopping workers")
-				goto Done
+				goto TheEnd
 			}
 		}
 	}
-Done:
-	stopAndWaitForWorkers()
+TheEnd:
+	close(stop)
+
+	// wait here until the workers are really done
+	wg.Wait()
+	log.Println("workers wait group done")
 }
 
 // GetLastMsgChannel returns a go channel the producers use to signal the end of the experiment
