@@ -11,13 +11,13 @@ import (
 
 type Worker struct {
 	workerId string
-	messages <-chan []byte
+	messages <-chan Message
 	config   *config.Config
 	channel  *amqp.Channel
 	queue    amqp.Queue
 }
 
-func NewWorker(workerId string, messages <-chan []byte, config *config.Config, connection *amqp.Connection, queue amqp.Queue) *Worker {
+func NewWorker(workerId string, messages <-chan Message, config *config.Config, connection *amqp.Connection, queue amqp.Queue) *Worker {
 
 	// every worker has a new channel, but they share one connection
 	// channels aren't thread safe https://stackoverflow.com/questions/47888730

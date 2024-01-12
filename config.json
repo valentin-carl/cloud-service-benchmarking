@@ -11,7 +11,7 @@
     }
   },
   "producer": {
-    "NProducers": 1,
+    "nProducers": 1,
     "nWorkers": 5,
     "options": {
       "mandatory": false,
@@ -30,6 +30,7 @@
     }
   },
   "workload": {
+    "generateRealTime": true,
     "generate": true,
     "workloadPath": ""
   },

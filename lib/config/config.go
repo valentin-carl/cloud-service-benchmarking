@@ -48,8 +48,9 @@ type Config struct {
 	} `json:"consumer"`
 
 	Workload struct {
-		Generate     bool   `json:"generate"`
-		WorkloadPath string `json:"workloadPath"`
+		GenerateRealTime bool   `json:"generateRealTime"`
+		Generate         bool   `json:"generate"`
+		WorkloadPath     string `json:"workloadPath"`
 	} `json:"workload"`
 
 	Experiment struct {
