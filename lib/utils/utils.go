@@ -36,7 +36,7 @@ func MergeMeasurements(target, dataDir, outDir string) (*os.File, error) {
 	log.Println("created", t.Name())
 	write := func(line string) error {
 		_, err := t.Write([]byte(fmt.Sprintf("%s\n", line)))
-		log.Println("writing")
+		//log.Println("writing")
 		return err
 	}
 	// write column names to .csv file

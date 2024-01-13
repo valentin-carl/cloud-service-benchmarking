@@ -87,7 +87,7 @@ func (c *Consumer) StartWithBufWorkers(interrupt <-chan os.Signal) {
 	}
 
 	// wait for and count "end" messages from the producers
-	nProducersDone := 0
+	nProducersDone, nProdTotal := 0, c.config.Producer.NProducers
 	for {
 		select {
 		case msg := <-lastMsgChannel:
@@ -96,7 +96,7 @@ func (c *Consumer) StartWithBufWorkers(interrupt <-chan os.Signal) {
 				if string(msg.Body) == "end" {
 					nProducersDone++
 					log.Println(nProducersDone, "producers are done")
-					if nProducersDone == n {
+					if nProducersDone == nProdTotal {
 						log.Println("all producers are done, telling supervisor to stop workers")
 						// tell supervisor to stop workers
 						close(done) // todo make sure this executes the done case at the supervisor

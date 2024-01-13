@@ -6,6 +6,7 @@ import (
 	"context"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"log"
+	"strconv"
 	"time"
 )
 
@@ -43,7 +44,8 @@ func (w *Worker) Start() {
 	for msg := range w.messages {
 		log.Println(w.workerId, "sending message..")
 		headers := make(amqp.Table)
-		headers["tProducer"] = time.Now().UnixMilli()
+		tprodstr := strconv.FormatInt(time.Now().UnixMilli(), 10)
+		headers["tProducer"] = tprodstr
 		// add timestamp as header 'tProducer'
 		// => this avoids having to use an external plugin that isn't precise enough
 		pub := amqp.Publishing{

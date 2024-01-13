@@ -77,7 +77,7 @@ func (w *Worker) Start(stop <-chan bool) {
 				err := event.Headers.Validate()
 				utils.Handle(err)
 				tProd, ok := event.Headers["tProducer"]
-				log.Println(tProd)
+				//log.Println(tProd)
 				if !ok {
 					utils.Handle(errors.New("could not read tProducer header"))
 				}

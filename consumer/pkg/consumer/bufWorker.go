@@ -122,7 +122,7 @@ func (b *BufWorker) ListenAndStore(messages <-chan amqp.Delivery, stop <-chan bo
 					// that's ok?
 					tprod, _ := tprod.(string)
 					t, err = strconv.ParseInt(tprod, 10, 64)
-					log.Println(t)
+					//log.Println(t)
 				} else {
 					utils.Handle(errors.New("\"tProducer\" header missing from message"))
 				}
@@ -168,7 +168,6 @@ type Supervisor struct {
 	queue     amqp.Queue
 }
 
-// todo start a supervisor in consumer.go
 func NewSupervisor(
 	interrupt <-chan os.Signal,
 	done <-chan bool,
@@ -191,7 +190,6 @@ func NewSupervisor(
 
 // Supervise
 // - stop: signal for worker
-// todo give (exactly!) the same channel to the workers
 func (s *Supervisor) Supervise(stop chan<- bool) {
 
 	defer s.channel.Close()
@@ -225,6 +223,8 @@ func (s *Supervisor) Supervise(stop chan<- bool) {
 					s.config.Broker.Queue.Args,
 				)
 				utils.Handle(err)
+
+				log.Println("messages left in queue:", q.Messages)
 
 				// if the queue's empty, close "done" to stop workers
 				if q.Messages == 0 {
