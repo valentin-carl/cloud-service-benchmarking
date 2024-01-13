@@ -3,6 +3,7 @@ package consumer
 import (
 	"benchmark/lib/config"
 	"benchmark/lib/utils"
+	"errors"
 	"fmt"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"log"
@@ -20,6 +21,110 @@ func NewConsumer(path string) *Consumer {
 	}
 }
 
+// StartWithBufWorkers uses the new and improved workers!
+//   - the interrupt channel is _mainly_ used by the supervisor to stop the workers in case
+//     of an interrupt, and the consumer just passes it along, but the consumer
+//     also stops (after the workers are done) in case of an interrupt
+func (c *Consumer) StartWithBufWorkers(interrupt <-chan os.Signal) {
+
+	// connect to broker + create channel to access API
+	connection, err := amqp.Dial(c.config.Broker.URL)
+	utils.Handle(err)
+	defer connection.Close()
+	channel, err := connection.Channel()
+	utils.Handle(err)
+	defer channel.Close()
+
+	// ensure the queue exists before starting supervisor + workers
+	qc := c.config.Broker.Queue
+	queue, err := channel.QueueDeclare(
+		qc.Name,
+		qc.Durable,
+		qc.AutoDelete,
+		qc.Durable,
+		qc.NoWait,
+		qc.Args,
+	)
+	utils.Handle(err)
+
+	// get channel with "end" message (go channel not amqp channel)
+	// context: after a producer is done, it sends an "end" message
+	// count and wait until all producers did so, then flush buffer and terminate
+	lastMsgChannel, err := c.GetLastMsgChannel(channel)
+	utils.Handle(err)
+
+	// stop channel is used by supervisor to stop the workers
+	// create it here because we need to pass it to both
+	stop := make(chan bool)
+
+	// done channel is used by consumer to tell the supervisor
+	// that all producers are done for this experiment run
+	done := make(chan bool)
+
+	// create + start the supervisor
+	supervisor := NewSupervisor(interrupt, done, c.config, connection, queue)
+	go supervisor.Supervise(stop)
+
+	// create + start the workers
+	n := c.config.Consumer.NWorkers
+	workers := make([]*BufWorker, n)
+	for i := 0; i < n; i++ {
+		workers[i] = NewBufWorker(
+			fmt.Sprintf("worker-%d", i),
+			c.config,
+			connection,
+			queue,
+		)
+	}
+	var wg sync.WaitGroup
+	for i := 0; i < n; i++ {
+		i := i
+		go func() {
+			wg.Add(1)
+			workers[i].Start(stop)
+			wg.Done()
+		}()
+	}
+
+	// wait for and count "end" messages from the producers
+	nProducersDone := 0
+	for {
+		select {
+		case msg := <-lastMsgChannel:
+			// triggered when a producer is done
+			{
+				if string(msg.Body) == "end" {
+					nProducersDone++
+					log.Println(nProducersDone, "producers are done")
+					if nProducersDone == n {
+						log.Println("all producers are done, telling supervisor to stop workers")
+						// tell supervisor to stop workers
+						close(done) // todo make sure this executes the done case at the supervisor
+						goto EndOfExperiment
+					}
+				} else {
+					utils.Handle(errors.New(`received message with body != "end" through lastMsg exchange, something went wrong`))
+				}
+			}
+		case <-interrupt:
+			// triggered when interrupt comes from this machine
+			// when an interrupt happens, the consumer should also stop
+			// => but it doesn't need to tell the supervisor + workers anymore
+			{
+				log.Println("consumer interrupted, waiting for workers to finish before stopping")
+				goto EndOfExperiment
+			}
+		}
+	}
+
+EndOfExperiment:
+	log.Println("consumer reached end of experiment, waiting for workers to finish")
+	// wait for all workers to actually finish
+	wg.Wait()
+	log.Println("consumer: wait group done")
+}
+
+// DEPRECATED
 func (c *Consumer) Start(interrupt <-chan os.Signal) {
 
 	// connect to the broker
@@ -51,12 +156,18 @@ func (c *Consumer) Start(interrupt <-chan os.Signal) {
 
 	// create + start workers
 	stop := make(chan bool)
-	workers := make([]*Worker, c.config.Consumer.NWorkers)
+	workers := make([]*BufWorker, c.config.Consumer.NWorkers)
 	for i := 0; i < len(workers); i++ {
-		workers[i] = NewWorker(
+		/*workers[i] = NewWorker(
 			connection,
 			fmt.Sprintf("worker-%d", i),
 			c.config,
+			queue,
+		)*/
+		workers[i] = NewBufWorker(
+			fmt.Sprintf("worker-%d", i),
+			c.config,
+			connection,
 			queue,
 		)
 	}
@@ -65,7 +176,8 @@ func (c *Consumer) Start(interrupt <-chan os.Signal) {
 
 	// start the workers
 	for _, worker := range workers {
-		wId := worker.workerId
+		//wId := worker.workerId
+		wId := worker.id
 		worker := worker
 		go func() {
 			wg.Add(1)
@@ -86,7 +198,10 @@ func (c *Consumer) Start(interrupt <-chan os.Signal) {
 				if string(msg.Body) == "end" {
 					nProducersDone++
 					log.Printf("received \"end\" from producer, %d/%d producers are done\n", nProducersDone, prodTotal)
-					goto TheEnd
+					if nProducersDone == prodTotal {
+						log.Println("all producers are done, stopping ...")
+						goto TheEnd
+					}
 				}
 			}
 		case <-interrupt:

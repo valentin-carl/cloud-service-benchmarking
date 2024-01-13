@@ -9,6 +9,10 @@ import (
 	"os"
 )
 
+//
+// this buffer is deprecated and using it is discouraged
+//
+
 type Measurement struct {
 	TProducer int64
 	TConsumer int64

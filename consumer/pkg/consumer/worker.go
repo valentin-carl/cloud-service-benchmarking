@@ -38,7 +38,6 @@ func NewWorker(connection *amqp.Connection, workerId string, config *config.Conf
 
 // Start todo docs
 // - stop: consumer tells workers to stop
-// - ack: worker tells consumer that it's really done => important for writing and moving files
 func (w *Worker) Start(stop <-chan bool) {
 
 	// get nodeId

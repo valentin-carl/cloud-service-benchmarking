@@ -15,6 +15,8 @@ const (
 // CalcOptimalBufferSize uses the system's block size to calculate
 // how many elements a buffer can hold to fill exactly one block
 // TODO subtract csv column titles
+//
+// DEPRECATED
 func CalcOptimalBufferSize() uint {
 	bs, err := GetBlockSize()
 	utils.Handle(err)

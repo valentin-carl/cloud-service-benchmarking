@@ -22,7 +22,7 @@ var (
 func main() {
 
 	// read nodeId
-	nidStr := os.Getenv("NODEID")
+	/*nidStr := os.Getenv("NODEID")
 	if nidStr == "" {
 		log.Panic("nodeId not set, terminating ...")
 	} else {
@@ -30,7 +30,9 @@ func main() {
 		nodeId, err = strconv.Atoi(nidStr)
 		utils.Handle(err)
 		log.Printf("nodeId set to %d\n", nodeId)
-	}
+	}*/
+	var err error
+	nodeId, err = utils.GetNodeId()
 
 	// load config
 	conf := config.Load(configFile)
@@ -42,7 +44,8 @@ func main() {
 	// ensure data is stored in case of sigint
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
-	cons.Start(c)
+	//cons.Start(c)
+	cons.StartWithBufWorkers(c)
 
 	// note: the consumer waits until all workers are completely done
 	// -> at this point, all measurements should be written to disk
@@ -51,7 +54,7 @@ func main() {
 	// filename pattern "experiment-run-<experiment id>-node-<node id>"
 	// (node refers to the consumer node, not broker)
 	targetFile := conf.Experiment.Id + "-node-" + strconv.Itoa(nodeId) + ".csv"
-	_, err := utils.MergeMeasurements(targetFile, conf.Experiment.DataDir, conf.Experiment.OutDir)
+	_, err = utils.MergeMeasurements(targetFile, conf.Experiment.DataDir, conf.Experiment.OutDir)
 	utils.Handle(err)
 
 	// archive raw data and update config file with new experiment number
@@ -76,24 +79,3 @@ func main() {
 	log.Println(<-c)
 	log.Printf("the end :-)")
 }
-
-/*
-Notizen
-- config: entweder dauer oder anzahl nachrichten vorgeben, damit throughput
-	gemessen wird; wenn beides vorgegeben, gebe ich den max throughput ja vor
-=> producer bauen der beides kann; dann bei support fragen was besser ist
-
-Producer:
-- beide modi implementieren
-A: zeit fest, wieviele nachrichten gehen durch?
-B: anzahl nachrichten fest, wie lange dauert das?
-- producer schickt am ende eine quit nachricht an eine andere queue?
-	die hört sich der consumer an und beendet die worker?
-=> choose option B, that's passive income
-*/
-
-/*
-TODO test
-	- ob das auch klappt mit vielen nachrichten, wenn die buffer mal voll sind etc.
-	- ob das auch klappt wenn es mehrere consumer nodes gibt
-*/

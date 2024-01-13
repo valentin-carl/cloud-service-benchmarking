@@ -40,7 +40,7 @@ func MergeMeasurements(target, dataDir, outDir string) (*os.File, error) {
 		return err
 	}
 	// write column names to .csv file
-	err = write("tProducer, tConsumer")
+	err = write("tProducer,tConsumer")
 	if err != nil {
 		log.Println("error")
 		return nil, err
@@ -75,7 +75,7 @@ func MergeMeasurements(target, dataDir, outDir string) (*os.File, error) {
 		scanner := bufio.NewScanner(file)
 		for scanner.Scan() {
 			line := scanner.Text()
-			log.Println(filename, line)
+			//log.Println(filename, line)
 			if line == "tProducer, tConsumer" {
 				continue
 			}
@@ -124,4 +124,20 @@ func NewMeasurements(dir string) (bool, error) {
 		}
 	}
 	return false, nil
+}
+
+func GetNodeId() (int, error) {
+	var nodeId int
+	nidStr := os.Getenv("NODEID")
+	if nidStr == "" {
+		log.Panic("nodeId not set, terminating ...")
+	} else {
+		var err error // same problem as in consumer::main
+		nodeId, err = strconv.Atoi(nidStr)
+		if err != nil {
+			return -1, err
+		}
+		log.Printf("nodeId set to %d\n", nodeId)
+	}
+	return nodeId, nil
 }
