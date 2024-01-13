@@ -213,7 +213,7 @@ func (g *RTG) Generate(messages chan<- Message) {
 		select {
 		case messages <- m:
 			{
-				log.Println("generated message:", string(m))
+				//log.Println("generated message:", string(m))
 			}
 		case <-g.stop:
 			{

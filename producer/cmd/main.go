@@ -10,6 +10,7 @@ import (
 	"os/signal"
 	prod "producer/pkg/producer"
 	"producer/pkg/workload"
+	"sync"
 	"time"
 )
 
@@ -39,10 +40,16 @@ func main() {
 	// generate the workload during the experiment run
 	if c.Workload.GenerateRealTime {
 
+		var wg sync.WaitGroup
+
 		// start the producer
 		stop = make(chan bool)
 		producer = prod.NewProducer(c)
-		producer.Start("", interrupt, stop)
+		go func() {
+			wg.Add(1)
+			producer.Start("", interrupt, stop)
+			wg.Done()
+		}()
 
 		// let the main goroutine wait here for the duration of the experiment
 		timer := time.NewTimer(time.Duration(c.Experiment.Duration) * time.Second) // todo set this correctly in the config
@@ -60,6 +67,7 @@ func main() {
 	Done:
 		log.Println("experiment duration over, stopping producer, generators, and workers ...")
 		close(stop)
+		wg.Wait()
 		log.Println("stop channel closed")
 
 	} else {
