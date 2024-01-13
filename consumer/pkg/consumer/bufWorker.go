@@ -79,7 +79,8 @@ func (b *BufWorker) Start(stop <-chan bool) {
 		options.Args,
 	)
 
-	// todo test this!
+	// tested locally: improved average throughput from ~33,000 msg/s to ~35,000 msg/s
+	// now a very reliable result but enough to leave this in
 	err = b.channel.Qos(
 		1,     // prefetch count
 		0,     // prefetch size
