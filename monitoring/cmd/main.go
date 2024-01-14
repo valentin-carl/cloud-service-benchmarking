@@ -24,7 +24,6 @@ const (
 func main() {
 
 	// todo think about how to get that data from the vm
-	// todo test on linux
 
 	nodeId, err := utils.GetNodeId()
 	utils.Handle(err)
