@@ -10,16 +10,23 @@ import (
 	"monitoring/pkg/monitor"
 	"os"
 	"os/signal"
+	"regexp"
+	"sort"
+	"strconv"
 	"sync"
 	"time"
 )
 
 const (
-	dir           = "./data"
-	measurementId = 0
+	dir    = "./data"
+	nodeId = 0
 )
 
 func main() {
+
+	// todo think about how to get that data from the vm
+	// todo nodeId => environment variable => check consumer code (dir is fine as constant)
+	// todo test on linux
 
 	// create a new directory to store data in if it doesn't exist yet
 	err := os.Mkdir(dir, os.ModePerm)
@@ -27,15 +34,14 @@ func main() {
 		log.Println("dir", dir, "already exists")
 	}
 
-	// todo to find number for new files: look at deprecated lib code
-	// todo also need a node id in the filename
-	// todo how to get that data from the vm
-
 	// new files for each kind of measurement + experiment run
-	cpuFile, err := os.Create(fmt.Sprintf("%s/cpu-%d.csv", dir, measurementId))
+	runId, err := GetNextExpNumber(dir)
 	utils.Handle(err)
 
-	memFile, err := os.Create(fmt.Sprintf("%s/mem-%d.csv", dir, measurementId))
+	cpuFile, err := os.Create(fmt.Sprintf("%s/broker-%d-run-%d-cpu.csv", dir, nodeId, runId))
+	utils.Handle(err)
+
+	memFile, err := os.Create(fmt.Sprintf("%s/broker-%d-run-%d-memory.csv", dir, nodeId, runId))
 	utils.Handle(err)
 
 	// the multitick ticker broadcasts time.Time values to multiple subscribers
@@ -75,4 +81,42 @@ func StartMonitor(m Monitor, wg *sync.WaitGroup, ticker <-chan time.Time, stop <
 	wg.Add(1)
 	m.Start(ticker, stop)
 	wg.Done()
+}
+
+//
+// helper functions
+//
+
+// GetNextExpNumber goes through the data dir and check which runId to use next
+func GetNextExpNumber(dir string) (int, error) {
+
+	// read all files + directories in dataDir
+	files, err := os.ReadDir(dir)
+	if err != nil {
+		return 0, err
+	}
+
+	// use capture group to find correct experiment number
+	// broker-X-run-Y-cpu.csv
+	// broker-X-run-Y-memory.csv
+	// broker-X-run-Y-network.csv
+	var nums []int
+	re := regexp.MustCompile(`broker-\d+-run-(\d+)-\D+.csv`)
+	for _, file := range files {
+		match := re.FindStringSubmatch(file.Name())
+		if len(match) == 2 {
+			num, err := strconv.Atoi(match[1])
+			if err == nil {
+				nums = append(nums, num)
+			}
+		}
+	}
+
+	// calculate + return the next experiment number
+	if len(nums) == 0 {
+		log.Println("did not find any data from old experiments in", dir)
+		return 0, nil
+	}
+	sort.Ints(nums)
+	return nums[len(nums)-1] + 1, nil
 }

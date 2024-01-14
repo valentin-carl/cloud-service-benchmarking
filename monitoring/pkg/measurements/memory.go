@@ -14,14 +14,17 @@ var (
 		"cached",
 		"inactive",
 		"swapFree",
+		"swapTotal",
 		"swapUsed",
 		"used",
+		"freep",
 	}
 )
 
 type MemoryMeasurement struct {
-	timestamp                                                                  int64  // unix timestamp of measurement
-	free, total, active, cached, inactive, swapFree, swapTotal, swapUsed, used uint64 // todo should be in bytes but check again
+	timestamp                                                                  int64   // unix timestamp of measurement
+	free, total, active, cached, inactive, swapFree, swapTotal, swapUsed, used uint64  // values in bytes
+	freep                                                                      float64 // freep => free/total
 }
 
 func NewMemoryMeasurement(timestamp int64, stats *memory.Stats) Measurement {
@@ -33,8 +36,10 @@ func NewMemoryMeasurement(timestamp int64, stats *memory.Stats) Measurement {
 		cached:    stats.Cached,
 		inactive:  stats.Inactive,
 		swapFree:  stats.SwapFree,
+		swapTotal: stats.SwapTotal,
 		swapUsed:  stats.SwapUsed,
 		used:      stats.Used,
+		freep:     float64(stats.Free) / float64(stats.Total),
 	}
 }
 
@@ -50,5 +55,6 @@ func (m *MemoryMeasurement) Record() []string {
 		fmt.Sprintf("%d", m.swapTotal),
 		fmt.Sprintf("%d", m.swapUsed),
 		fmt.Sprintf("%d", m.used),
+		fmt.Sprintf("%f", m.freep),
 	}
 }
