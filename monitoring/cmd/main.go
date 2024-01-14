@@ -1,161 +1,78 @@
 package main
 
 import (
-	"encoding/csv"
+	"benchmark/lib/utils"
 	"fmt"
+	"github.com/VividCortex/multitick"
 	"github.com/mackerelio/go-osstat/cpu"
 	"github.com/mackerelio/go-osstat/memory"
 	"log"
-	"math"
+	"monitoring/pkg/monitor"
 	"os"
+	"os/signal"
+	"sync"
 	"time"
 )
 
 const (
-	dir      = "./data"
-	filename = "measurements-0.csv"
+	dir           = "./data"
+	measurementId = 0
 )
-
-func Handle(err error) {
-	if err != nil {
-		panic(err)
-	}
-}
 
 func main() {
 
-	{
-		// get cpu stats
-		x, err := cpu.Get()
-		if err != nil {
-			panic(err)
-		}
-		fmt.Println(x)
-		fmt.Println(x.Total)
-		fmt.Println(x.Nice)
-		fmt.Println(x.Idle)
-		fmt.Println(x.System)
-		fmt.Println(x.User)
-
-		// get memory stats
-		y, err := memory.Get()
-		if err != nil {
-			panic(err)
-		}
-		fmt.Println(y.Free)
-	}
-
-	//
-	//
-	//
-
-	err := os.Mkdir("./data", os.ModePerm)
+	// create a new directory to store data in if it doesn't exist yet
+	err := os.Mkdir(dir, os.ModePerm)
 	if err != nil {
 		log.Println("dir", dir, "already exists")
 	}
 
-	file, err := os.Create(fmt.Sprintf("%s/%s", dir, filename)) // todo create new file instead of truncating the old one
-	Handle(err)
+	// todo to find number for new files: look at deprecated lib code
+	// todo also need a node id in the filename
+	// todo how to get that data from the vm
 
-	w := csv.NewWriter(file)
-	defer w.Flush()
+	// new files for each kind of measurement + experiment run
+	cpuFile, err := os.Create(fmt.Sprintf("%s/cpu-%d.csv", dir, measurementId))
+	utils.Handle(err)
 
-	// write csv column names
-	err = w.Write([]string{
-		"timestamp",
-		"user",
-		"system",
-		"idle",
-		"nice",
-		"total",
-		"userp",
-		"systemp",
-		"idlep",
-	})
-	Handle(err)
-	w.Flush()
+	memFile, err := os.Create(fmt.Sprintf("%s/mem-%d.csv", dir, measurementId))
+	utils.Handle(err)
 
-	var prev *cpu.Stats
-	t := time.NewTicker(time.Second)
+	// the multitick ticker broadcasts time.Time values to multiple subscribers
+	// closing the stop channel broadcasts a signal to all listening goroutines
+	// (i.e., to multiple monitor objects)
+	ticker := multitick.NewTicker(time.Second, 0)
+	stop := make(chan bool)
 
-	stop := time.NewTimer(15 * time.Second)
+	// create monitoring routines
+	var wg sync.WaitGroup
+	cpuMonitor := monitor.NewMonitor[*cpu.Stats](cpuFile)
+	memMonitor := monitor.NewMonitor[*memory.Stats](memFile)
+	go StartMonitor(cpuMonitor, &wg, ticker.Subscribe(), stop)
+	go StartMonitor(memMonitor, &wg, ticker.Subscribe(), stop)
 
-	for {
-		select {
-		case <-t.C:
-			{
-				// get + store new measurements
-				curr, err := cpu.Get()
-				Handle(err)
-				m := NewMeasurement(time.Now().UnixMilli(), curr, prev)
-				err = m.Write(w)
-				Handle(err)
-				prev = curr
-			}
-		case <-stop.C:
-			{
-				log.Println("received stop signal")
-				goto TheEnd
-			}
-		}
-	}
+	// listen for interrupt in main and close stop channel accordingly
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+	<-c
+	log.Println("interrupted")
 
-TheEnd:
-	log.Println("done")
+	// stop the monitors and wait for them to finish
+	close(stop)
+	wg.Wait()
+
+	log.Println("the end :-)")
 }
 
-type Measurement struct {
-	timestamp                       int64   // unix timestamp of measurement
-	user, system, idle, nice, total uint64  // raw values
-	userp, systemp, idlep           float64 // percentage calculated with last measurement
+// Monitor is a helper interface
+// all instances of the generic monitor.Monitor implement this interface,
+// this makes the Start Function a bit nicer
+type Monitor interface {
+	Start(<-chan time.Time, <-chan bool)
 }
 
-func NewMeasurement(
-	timestamp int64, // todo for analysis: these values are millisecond => convert them to seconds
-	curr *cpu.Stats,
-	prev *cpu.Stats,
-) *Measurement {
-
-	var userp, systemp, idlep float64
-
-	if prev == nil {
-		log.Println("no previous measurement, unable to calculate relative values")
-		userp, systemp, idlep = math.NaN(), math.NaN(), math.NaN()
-	} else {
-		log.Println("previous measurement available, calculating relative values")
-		tDiff := float64(curr.Total - prev.Total)
-		userp = (float64(curr.User-prev.User) / tDiff) * 100
-		systemp = (float64(curr.System-prev.System) / tDiff) * 100
-		idlep = (float64(curr.Idle-prev.Idle) / tDiff) * 100
-	}
-
-	return &Measurement{
-		timestamp: timestamp,
-		user:      curr.User,
-		system:    curr.System,
-		idle:      curr.Idle,
-		nice:      curr.Nice,
-		total:     curr.Total,
-		userp:     userp,
-		systemp:   systemp,
-		idlep:     idlep,
-	}
-}
-
-func (m *Measurement) Write(w *csv.Writer) error {
-	return w.Write(m.Record())
-}
-
-func (m *Measurement) Record() []string {
-	return []string{
-		fmt.Sprintf("%d", m.timestamp),
-		fmt.Sprintf("%d", m.user),
-		fmt.Sprintf("%d", m.system),
-		fmt.Sprintf("%d", m.idle),
-		fmt.Sprintf("%d", m.nice),
-		fmt.Sprintf("%d", m.total),
-		fmt.Sprintf("%f", m.userp),
-		fmt.Sprintf("%f", m.systemp),
-		fmt.Sprintf("%f", m.idlep),
-	}
+func StartMonitor(m Monitor, wg *sync.WaitGroup, ticker <-chan time.Time, stop <-chan bool) {
+	wg.Add(1)
+	m.Start(ticker, stop)
+	wg.Done()
 }
