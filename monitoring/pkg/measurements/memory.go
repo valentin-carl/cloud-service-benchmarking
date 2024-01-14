@@ -24,7 +24,7 @@ var (
 type MemoryMeasurement struct {
 	timestamp                                                                  int64   // unix timestamp of measurement
 	free, total, active, cached, inactive, swapFree, swapTotal, swapUsed, used uint64  // values in bytes
-	freep                                                                      float64 // freep => free/total
+	freep                                                                      float64 // freep => free/total * 100
 }
 
 func NewMemoryMeasurement(timestamp int64, stats *memory.Stats) Measurement {
@@ -39,7 +39,7 @@ func NewMemoryMeasurement(timestamp int64, stats *memory.Stats) Measurement {
 		swapTotal: stats.SwapTotal,
 		swapUsed:  stats.SwapUsed,
 		used:      stats.Used,
-		freep:     float64(stats.Free) / float64(stats.Total),
+		freep:     float64(stats.Free) / float64(stats.Total) * 100,
 	}
 }
 

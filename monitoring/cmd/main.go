@@ -18,18 +18,20 @@ import (
 )
 
 const (
-	dir    = "./data"
-	nodeId = 0
+	dir = "./data"
 )
 
 func main() {
 
 	// todo think about how to get that data from the vm
-	// todo nodeId => environment variable => check consumer code (dir is fine as constant)
 	// todo test on linux
 
+	nodeId, err := utils.GetNodeId()
+	utils.Handle(err)
+	log.Println("got nodeId:", nodeId)
+
 	// create a new directory to store data in if it doesn't exist yet
-	err := os.Mkdir(dir, os.ModePerm)
+	err = os.Mkdir(dir, os.ModePerm)
 	if err != nil {
 		log.Println("dir", dir, "already exists")
 	}
