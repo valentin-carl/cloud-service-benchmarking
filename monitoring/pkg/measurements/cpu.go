@@ -27,11 +27,7 @@ type CPUMeasurement struct {
 	userp, systemp, idlep           float64 // percentage calculated with last measurement
 }
 
-func NewCPUMeasurement(
-	timestamp int64, // todo for analysis: these values are milliseconds => convert them to seconds
-	curr *cpu.Stats,
-	prev *cpu.Stats,
-) Measurement {
+func NewCPUMeasurement(timestamp int64, curr *cpu.Stats, prev *cpu.Stats) Measurement {
 
 	var userp, systemp, idlep float64
 
@@ -59,8 +55,8 @@ func NewCPUMeasurement(
 	}
 }
 
-func (m *CPUMeasurement) Record() []string {
-	return []string{
+func (m *CPUMeasurement) Records() [][]string {
+	return [][]string{{
 		fmt.Sprintf("%d", m.timestamp),
 		fmt.Sprintf("%d", m.user),
 		fmt.Sprintf("%d", m.system),
@@ -70,5 +66,5 @@ func (m *CPUMeasurement) Record() []string {
 		fmt.Sprintf("%f", m.userp),
 		fmt.Sprintf("%f", m.systemp),
 		fmt.Sprintf("%f", m.idlep),
-	}
+	}}
 }

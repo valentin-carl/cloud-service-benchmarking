@@ -5,22 +5,23 @@ import (
 	"errors"
 	"github.com/mackerelio/go-osstat/cpu"
 	"github.com/mackerelio/go-osstat/memory"
+	"github.com/mackerelio/go-osstat/network"
 	"log"
 )
 
 type Measurement interface {
-	Record() []string
+	Records() [][]string // one record == one line in csv (for some kinds of measurements, there might be multiple record per timestamp)
 }
 
 // NewMeasurement
-//   - t: is the current timestamp, unix ms
+//   - t: is the current timestamp, unix ms // todo for analysis: convert ms to s
 //   - stats: is variadic because some measurements might need values for
 //     multiple points in time to calculate utilization (e.g., CPU)
 //     => otherwise, just use the first element
 //     (function panics if there is no first element)
-//
-// todo extend with network stats
-func NewMeasurement[T interface{ *cpu.Stats | *memory.Stats }](t int64, stats ...T) Measurement {
+func NewMeasurement[T interface {
+	*cpu.Stats | *memory.Stats | []network.Stats
+}](t int64, stats ...T) Measurement {
 
 	// quick safety check
 	if len(stats) == 0 {
@@ -51,6 +52,19 @@ func NewMeasurement[T interface{ *cpu.Stats | *memory.Stats }](t int64, stats ..
 				utils.Handle(errors.New("could not convert cpu measurement to *cpu.Stats"))
 			}
 			return NewMemoryMeasurement(t, s)
+		}
+	case []network.Stats:
+		{
+			log.Println("creating new memory measurement")
+			s0, ok := any(stats[0]).([]network.Stats)
+			if !ok {
+				utils.Handle(errors.New("could not convert cpu measurement to *network.Stats"))
+			}
+			s1, ok := any(stats[1]).([]network.Stats)
+			if !ok {
+				utils.Handle(errors.New("could not convert cpu measurement to *network.Stats"))
+			}
+			return NewNetworkMeasurement(t, s0, s1)
 		}
 	default:
 		{

@@ -6,6 +6,7 @@ import (
 	"github.com/VividCortex/multitick"
 	"github.com/mackerelio/go-osstat/cpu"
 	"github.com/mackerelio/go-osstat/memory"
+	"github.com/mackerelio/go-osstat/network"
 	"log"
 	"monitoring/pkg/monitor"
 	"os"
@@ -23,7 +24,7 @@ const (
 
 func main() {
 
-	// todo think about how to get that data from the vm
+	// todo think about how to get the data back from the vm
 
 	nodeId, err := utils.GetNodeId()
 	utils.Handle(err)
@@ -45,6 +46,9 @@ func main() {
 	memFile, err := os.Create(fmt.Sprintf("%s/broker-%d-run-%d-memory.csv", dir, nodeId, runId))
 	utils.Handle(err)
 
+	netFile, err := os.Create(fmt.Sprintf("%s/broker-%d-run-%d-network.csv", dir, nodeId, runId))
+	utils.Handle(err)
+
 	// the multitick ticker broadcasts time.Time values to multiple subscribers
 	// closing the stop channel broadcasts a signal to all listening goroutines
 	// (i.e., to multiple monitor objects)
@@ -53,10 +57,14 @@ func main() {
 
 	// create monitoring routines
 	var wg sync.WaitGroup
+
 	cpuMonitor := monitor.NewMonitor[*cpu.Stats](cpuFile)
 	memMonitor := monitor.NewMonitor[*memory.Stats](memFile)
+	netMonitor := monitor.NewMonitor[[]network.Stats](netFile)
+
 	go StartMonitor(cpuMonitor, &wg, ticker.Subscribe(), stop)
 	go StartMonitor(memMonitor, &wg, ticker.Subscribe(), stop)
+	go StartMonitor(netMonitor, &wg, ticker.Subscribe(), stop)
 
 	// listen for interrupt in main and close stop channel accordingly
 	c := make(chan os.Signal, 1)

@@ -43,8 +43,8 @@ func NewMemoryMeasurement(timestamp int64, stats *memory.Stats) Measurement {
 	}
 }
 
-func (m *MemoryMeasurement) Record() []string {
-	return []string{
+func (m *MemoryMeasurement) Records() [][]string {
+	return [][]string{{
 		fmt.Sprintf("%d", m.timestamp),
 		fmt.Sprintf("%d", m.free),
 		fmt.Sprintf("%d", m.total),
@@ -56,5 +56,5 @@ func (m *MemoryMeasurement) Record() []string {
 		fmt.Sprintf("%d", m.swapUsed),
 		fmt.Sprintf("%d", m.used),
 		fmt.Sprintf("%f", m.freep),
-	}
+	}}
 }
