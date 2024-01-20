@@ -74,9 +74,9 @@ done
 #       - setup/ <= you are here
 #   - config.json
 
-gcloud compute scp --recurse "./../../producer" valentincarl@"$instance":~
-gcloud compute scp --recurse "./../../lib" valentincarl@"$instance":~
-gcloud compute scp "./../../config.json" valentincarl@"$instance":~
+gcloud compute scp --recurse "./../../producer" "$user"@"$instance":~
+gcloud compute scp --recurse "./../../lib" "$user"@"$instance":~
+gcloud compute scp "./../../config.json" "$user"@"$instance":~
 
 #
 # build the producer
