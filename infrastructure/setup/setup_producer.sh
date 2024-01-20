@@ -38,7 +38,7 @@ execute_remote () {
 
 commands=(
     "sudo apt-get update"
-    "sudo apt-get install -y fish ranger network-manager"
+    "sudo apt-get install -y fish ranger network-manager net-tools"
     #"sudo apt-get install -y bash htop vim curl iputils-ping" # these should already be installed
 )
 
