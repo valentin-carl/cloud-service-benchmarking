@@ -6,3 +6,4 @@ playground
 *.tfstate
 *.tfstate.backup
 .terraform.lock.hcl
+setup/setup_broker_old.sh

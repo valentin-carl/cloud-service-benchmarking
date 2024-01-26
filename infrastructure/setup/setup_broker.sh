@@ -1,12 +1,9 @@
 #!/bin/sh
 
-# todo set the nodeId here or in terraform?
-#  => if not, merge consumer and producer scripts?
-
+#
 # gcloud parameters
-# - instance
-# - zone
-# - user
+#
+
 instance="$1"
 if [ -z "$1" ]; then
     echo "need instance name to execute script"
@@ -44,7 +41,7 @@ execute_remote () {
 
 commands=(
     "sudo apt-get update"
-    "sudo apt-get install -y fish ranger network-manager net-tools"
+    "sudo apt-get install -y rabbitmq-server ranger network-manager net-tools"
     #"sudo apt-get install -y bash htop vim curl iputils-ping" # these should already be installed
 )
 
@@ -69,33 +66,56 @@ for command in "${commands[@]}"; do
 done
 
 #
-# send consumer code to VM
+# transfer monitoring code
 #
 
 # relative paths & required files/directories:
 # - benchmark
-#   - consumer/
+#   - monitoring/
 #   - lib/
 #   - terraform/
 #       - setup/ <= you are here
-#   - config.json
 
-gcloud compute scp --recurse "./../../consumer" "$user"@"$instance":~
+gcloud compute scp --recurse "./../../monitoring" "$user"@"$instance":~
 gcloud compute scp --recurse "./../../lib" "$user"@"$instance":~
-gcloud compute scp "./../../config.json" "$user"@"$instance":~
 
 #
-# build the consumer
+# build it
 #
 
 commands=(
-    "cd ~/consumer; /usr/local/go/bin/go build cmd/main.go"
+    "cd ~/monitoring; /usr/local/go/bin/go build cmd/main.go"
 )
 
 for command in "${commands[@]}"; do
     execute_remote "$instance" "$zone" "$command"
 done
 
-# to start the consumer, run:
-# `gcloud compute ssh "$instance" --zone="zone" --command="export $NODEID=3; cd ~/consumer; ./main"`
-# todo check that the nodeid stuff works
+#
+# setup rabbitmq
+#
+
+commands=(
+    # erlang cookie must be the same on all nodes for clustering
+    # the content itself doesn't matter (just a string),
+    # it just needs to be the same across all nodes
+    # the hash should be `T01lC+isYECECAAyiG87Uw==`
+    # to find out, run: (and adjust the instance name if necessary)
+    # `sudo cat /var/log/rabbitmq/rabbit@producer-instance-0.log | grep cookie`
+    "sudo rabbitmq-plugins enable rabbitmq_management"
+    "sudo chmod 666 /var/lib/rabbitmq/.erlang.cookie"
+    'echo "mynameisjeff" > /var/lib/rabbitmq/.erlang.cookie'
+    "sudo chmod 600 /var/lib/rabbitmq/.erlang.cookie"
+    "sudo systemctl restart rabbitmq-server"
+    # create a new user (guest only works on localhost)
+    # this is also used by the consumers + producers
+    "sudo rabbitmqctl add_user 'jeff' 'jeff'"
+    'sudo rabbitmqctl set_permissions -p "/" "jeff" ".*" ".*" ".*"'
+    "sudo rabbitmqctl set_user_tags jeff administrator"
+    # required for cluster formation
+    'for (( i = 0 ; i < 7 ; i++ )); do echo "10.0.0.$((i+2)) producer-instance-$i" | sudo tee -a /etc/hosts; done'
+)
+
+for command in "${commands[@]}"; do
+    execute_remote "$instance" "$zone" "$command"
+done

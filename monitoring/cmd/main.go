@@ -24,8 +24,6 @@ const (
 
 func main() {
 
-	// todo think about how to get the data back from the vm
-
 	nodeId, err := utils.GetNodeId()
 	utils.Handle(err)
 	log.Println("got nodeId:", nodeId)
@@ -77,6 +75,8 @@ func main() {
 	wg.Wait()
 
 	log.Println("the end :-)")
+
+	// todo maybe create file-server here as in consumer?
 }
 
 // Monitor is a helper interface

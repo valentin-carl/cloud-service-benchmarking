@@ -7,19 +7,21 @@
       "autoDelete": false,
       "exclusive": false,
       "noWait": false,
-      "args": {}
+      "args": {
+          "x-queue-type": "quorum"
+      }
     }
   },
   "producer": {
     "nProducers": 1,
-    "nWorkers": 5,
+    "nWorkers": 20,
     "options": {
       "mandatory": false,
       "immediate": false
     }
   },
   "consumer": {
-    "nWorkers": 10,
+    "nWorkers": 50,
     "options": {
       "autoAck": false,
       "ackMultiple": false,
@@ -31,15 +33,15 @@
   },
   "workload": {
     "generateRealTime": true,
-    "generate": true,
+    "generate": false,
     "workloadPath": ""
   },
   "experiment": {
-    "id": "experiment-run-4",
+    "id": "experiment-run-7",
     "dataDir": "./data",
     "outDir": "./out",
-    "duration": 360,
-    "nMessagesTotal": 1000000,
+    "duration": 60,
+    "nMessagesTotal": 0,
     "messageSize": 1024
   }
 }
