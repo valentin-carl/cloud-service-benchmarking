@@ -113,7 +113,7 @@ commands=(
     'sudo rabbitmqctl set_permissions -p "/" "jeff" ".*" ".*" ".*"'
     "sudo rabbitmqctl set_user_tags jeff administrator"
     # required for cluster formation
-    'for (( i = 0 ; i < 7 ; i++ )); do echo "10.0.0.$((i+2)) producer-instance-$i" | sudo tee -a /etc/hosts; done'
+    'for (( i = 0 ; i < 7 ; i++ )); do echo "10.0.0.$((i+2)) broker-instance-$i" | sudo tee -a /etc/hosts; done'
 )
 
 for command in "${commands[@]}"; do
