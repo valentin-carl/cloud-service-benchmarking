@@ -19,7 +19,7 @@ mkdir benchmark
 cd benchmark
 
 git clone https://github.com/valentin-carl/cloud-service-benchmarking.git
-cd cloud-service-benchmarking/producer
+cd cloud-service-benchmarking/consumer
 sudo go build ./cmd/main.go
 
 ls -lah
