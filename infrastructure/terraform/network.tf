@@ -75,5 +75,8 @@ resource "google_compute_router_nat" "nat" {
   router                 = google_compute_router.router.name
   source_subnetwork_ip_ranges_to_nat = "LIST_OF_SUBNETWORKS"
 
-  # TODO
+  subnetwork {
+    name                    = google_compute_subnetwork.subnet.id
+    source_ip_ranges_to_nat = ["ALL_IP_RANGES"]
+  }
 }

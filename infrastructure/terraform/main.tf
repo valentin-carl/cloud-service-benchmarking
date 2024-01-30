@@ -20,10 +20,11 @@ module "startup-scripts" {
   version = "2.0.0"
 }
 
+/*
 module "cloud-nat" {
   source     = "terraform-google-modules/cloud-nat/google"
   version    = "~> 5.0"
   router     = google_compute_router.router.name
   project_id = "prime-bonbon-407317"
   region     = "europe-west10"
-}
+}*/
