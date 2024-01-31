@@ -37,11 +37,12 @@ func (c *Consumer) StartWithBufWorkers(interrupt <-chan os.Signal) {
 
 	// ensure the queue exists before starting supervisor + workers
 	qc := c.config.Broker.Queue
+	log.Printf("\nqc.Name: %s\nqc.Durable: %t\nqc.AutoDelete: %t\nqc.Durable")
 	queue, err := channel.QueueDeclare(
 		qc.Name,
 		qc.Durable,
 		qc.AutoDelete,
-		qc.Durable,
+		qc.Exclusive,
 		qc.NoWait,
 		qc.Args,
 	)

@@ -29,6 +29,10 @@ N_BROKER_NODES=3 # or 5 or 7, depending on the current run
 
 ## 2. Running the experiment
 
+> **Note**: The instances will synchronize their clocks using `chrony` and the NTP server `metadata.google.internal`.
+> It might be a good idea to wait a bit between setting up the infrastructure and starting the experiment in order for the clocks to be closer together.
+> Hint: Check the status using `sudo chronyc sources`.
+
 ### A. Starting the experiment
 
 TODO 
