@@ -3,7 +3,7 @@
     "url": "amqp://jeff:jeff@10.0.0.2:5672",
     "queue": {
       "name": "queue",
-      "durable": false,
+      "durable": true,
       "autoDelete": false,
       "exclusive": false,
       "noWait": false,
