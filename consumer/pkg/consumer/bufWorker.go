@@ -212,6 +212,24 @@ func (s *Supervisor) Supervise(stop chan<- bool) {
 			// fixme while waiting for the queue to be empty, an interrupt could be triggered => ignore this for now
 			log.Println("supervisor received done message, waiting for queue to be empty before stopping workers")
 			t, tmax := 100, 6400
+
+			// rabbitmq wants 'x-quorum-initial-group-size' to be an int but golang parses all numbers in json files as float64
+			var args amqp.Table
+			if _, ok := s.config.Broker.Queue.Args["x-quorum-initial-group-size"]; !ok {
+				args = s.config.Broker.Queue.Args
+			} else {
+				log.Println("trying to cast x-quorum-initial-group-size to int")
+				args = make(amqp.Table) // golang why are maps nil by default????
+				for key, value := range s.config.Broker.Queue.Args {
+					if key != "x-quorum-initial-group-size" {
+						args[key] = value
+					} else {
+						log.Println("casting")
+						args["x-quorum-initial-group-size"] = int(s.config.Broker.Queue.Args["x-quorum-initial-group-size"].(float64))
+					}
+				}
+			}
+
 		Check:
 			for {
 				// check amount of messages in the queue
@@ -221,7 +239,7 @@ func (s *Supervisor) Supervise(stop chan<- bool) {
 					s.config.Broker.Queue.AutoDelete,
 					s.config.Broker.Queue.Exclusive,
 					s.config.Broker.Queue.NoWait,
-					s.config.Broker.Queue.Args,
+					args,
 				)
 				utils.Handle(err)
 

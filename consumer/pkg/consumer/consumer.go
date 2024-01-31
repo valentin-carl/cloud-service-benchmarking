@@ -38,13 +38,31 @@ func (c *Consumer) StartWithBufWorkers(interrupt <-chan os.Signal) {
 	// ensure the queue exists before starting supervisor + workers
 	qc := c.config.Broker.Queue
 	log.Printf("\nqc.Name: %s\nqc.Durable: %t\nqc.AutoDelete: %t\nqc.Durable")
+
+	// rabbitmq wants 'x-quorum-initial-group-size' to be an int but golang parses all numbers in json files as float64
+	var args amqp.Table
+	if _, ok := qc.Args["x-quorum-initial-group-size"]; !ok {
+		args = qc.Args
+	} else {
+		log.Println("trying to cast x-quorum-initial-group-size to int")
+		args = make(amqp.Table) // golang why are maps nil by default????
+		for key, value := range qc.Args {
+			if key != "x-quorum-initial-group-size" {
+				args[key] = value
+			} else {
+				log.Println("casting")
+				args["x-quorum-initial-group-size"] = int(qc.Args["x-quorum-initial-group-size"].(float64))
+			}
+		}
+	}
+
 	queue, err := channel.QueueDeclare(
 		qc.Name,
 		qc.Durable,
 		qc.AutoDelete,
 		qc.Exclusive,
 		qc.NoWait,
-		qc.Args,
+		args,
 	)
 	utils.Handle(err)
 
