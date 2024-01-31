@@ -17,7 +17,7 @@ echo "mynameisjeff" > /var/lib/rabbitmq/.erlang.cookie
 sudo chmod 600 /var/lib/rabbitmq/.erlang.cookie
 sudo systemctl restart rabbitmq-server
 sudo rabbitmqctl add_user "jeff" "jeff"
-sudo rabbitmqctl set_permissions =p "/" "jeff" ".*" ".*" ".*"
+sudo rabbitmqctl set_permissions -p "/" "jeff" ".*" ".*" ".*"
 sudo rabbitmqctl set_user_tags jeff administrator
 for (( i = 0 ; i < 7 ; i++ )); do
     echo "10.0.0.$((i+2)) broker-instance-$i" | sudo tee -a /etc/hosts

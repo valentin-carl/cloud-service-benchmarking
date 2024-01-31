@@ -1,6 +1,6 @@
 {
   "broker": {
-    "url": "amqp://jeff:jeff@localhost:5672",
+    "url": "amqp://jeff:jeff@10.0.0.2:5672",
     "queue": {
       "name": "queue",
       "durable": false,
@@ -37,10 +37,10 @@
     "workloadPath": ""
   },
   "experiment": {
-    "id": "experiment-run-7",
+    "id": "experiment-run-0",
     "dataDir": "./data",
     "outDir": "./out",
-    "duration": 60,
+    "duration": 180,
     "nMessagesTotal": 0,
     "messageSize": 1024
   }
