@@ -118,7 +118,7 @@ func (c *Consumer) StartWithBufWorkers(interrupt <-chan os.Signal) {
 					if nProducersDone == nProdTotal {
 						log.Println("all producers are done, telling supervisor to stop workers")
 						// tell supervisor to stop workers
-						close(done) // todo make sure this executes the done case at the supervisor
+						close(done)
 						goto EndOfExperiment
 					}
 				} else {

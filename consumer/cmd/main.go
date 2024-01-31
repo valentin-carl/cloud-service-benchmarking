@@ -4,7 +4,6 @@ import (
 	"benchmark/lib/config"
 	"benchmark/lib/utils"
 	"consumer/pkg/consumer"
-	"consumer/pkg/server"
 	"log"
 	"os"
 	"os/signal"
@@ -22,15 +21,6 @@ var (
 func main() {
 
 	// read nodeId
-	/*nidStr := os.Getenv("NODEID")
-	if nidStr == "" {
-		log.Panic("nodeId not set, terminating ...")
-	} else {
-		var err error // ensures that the global nodeId gets new values and isn't shadowed
-		nodeId, err = strconv.Atoi(nidStr)
-		utils.Handle(err)
-		log.Printf("nodeId set to %d\n", nodeId)
-	}*/
 	var err error
 	nodeId, err = utils.GetNodeId()
 
@@ -71,11 +61,11 @@ func main() {
 	// make downloads via http possible => download data from VMs after experiment is done
 	// e.g., curl localhost:80/download/out/experiment-run-0-node-0.csv
 	// hint: using localhost:80/download in browser allows you to explore all files
-	s := server.NewServer(":80", "./")
-	go func() {
-		err := s.Serve()
-		utils.Handle(err)
-	}()
-	log.Println(<-c)
-	log.Printf("the end :-)")
+	/*	s := server.NewServer(":80", "./")
+		go func() {
+			err := s.Serve()
+			utils.Handle(err)
+		}()
+		log.Println(<-c)
+	*/log.Printf("the end :-)")
 }
