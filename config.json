@@ -9,7 +9,7 @@
       "noWait": false,
       "args": {
           "x-queue-type": "quorum",
-          "x-quorum-initial-group-size": 3
+          "x-quorum-initial-group-size": 7
       }
     }
   },
