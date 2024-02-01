@@ -22,17 +22,17 @@ fi
 # start consumers
 for (( i = 0 ; i < "$N_CONS" ; i++ )); do
     gcloud compute ssh "consumer-instance-$i" --command \
-		"export NODEID=$i; sudo -E bash -c '/benchmark/cloud-service-benchmarking/consumer/main &>/dev/null &'"
+		"export NODEID=$i; sudo -E bash -c 'cd /benchmark/cloud-service-benchmarking/consumer/; ./main &> /var/log/benchmark.log &'"
 done
 
 # start monitoring at broker nodes
 for (( i = 0 ; i < "$N_BROK" ; i++ )); do
 	gcloud compute ssh "broker-instance-$i" --command \
-		"export NODEID=$i; sudo -E bash -c '/benchmark/cloud-service-benchmarking/monitoring/main &>/dev/null &'"
+		"export NODEID=$i; sudo -E bash -c '/benchmark/cloud-service-benchmarking/monitoring/main &> /var/log/benchmark.log &'"
 done
 
 # start producers
 for (( i = 0 ; i < "$N_PROD" ; i++ )); do
     gcloud compute ssh "producer-instance-$i" --command \
-        "sudo -E bash -c '/benchmark/cloud-service-benchmarking/producer/main &>/dev/null &'"
+        "sudo -E bash -c 'cd /benchmark/cloud-service-benchmarking/producer/; ./main &> /var/log/benchmark.log &'"
 done
