@@ -15,7 +15,7 @@
   },
   "producer": {
     "nProducers": 2,
-    "nWorkers": 20,
+    "nWorkers": 50,
     "options": {
       "mandatory": false,
       "immediate": false
@@ -41,7 +41,7 @@
     "id": "experiment-run-0",
     "dataDir": "./data",
     "outDir": "./out",
-    "duration": 180,
+    "duration": 1200,
     "nMessagesTotal": 0,
     "messageSize": 1024
   }
