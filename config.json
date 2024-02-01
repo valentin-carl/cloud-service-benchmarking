@@ -14,7 +14,7 @@
     }
   },
   "producer": {
-    "nProducers": 1,
+    "nProducers": 2,
     "nWorkers": 20,
     "options": {
       "mandatory": false,
