@@ -9,7 +9,7 @@
       "noWait": false,
       "args": {
           "x-queue-type": "quorum",
-          "x-quorum-initial-group-size": 7
+          "x-quorum-initial-group-size": 3
       }
     }
   },
@@ -41,7 +41,7 @@
     "id": "experiment-run-0",
     "dataDir": "./data",
     "outDir": "./out",
-    "duration": 1200,
+    "duration": 3600,
     "nMessagesTotal": 0,
     "messageSize": 1024
   }
