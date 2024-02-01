@@ -16,13 +16,13 @@ sudo chmod 666 /var/lib/rabbitmq/.erlang.cookie
 echo "mynameisjeff" > /var/lib/rabbitmq/.erlang.cookie
 sudo chmod 600 /var/lib/rabbitmq/.erlang.cookie
 sudo systemctl restart rabbitmq-server
+sudo rabbitmqctl set_vm_memory_high_watermark 0.7
 sudo rabbitmqctl add_user "jeff" "jeff"
 sudo rabbitmqctl set_permissions -p "/" "jeff" ".*" ".*" ".*"
 sudo rabbitmqctl set_user_tags jeff administrator
 for (( i = 0 ; i < 7 ; i++ )); do
     echo "10.0.0.$((i+2)) broker-instance-$i" | sudo tee -a /etc/hosts
 done
-# TODO cluster formation needs extra script once all broker instances run
 
 # install golang
 wget https://go.dev/dl/go1.21.6.linux-amd64.tar.gz
