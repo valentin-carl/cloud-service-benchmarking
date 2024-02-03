@@ -20,7 +20,7 @@ if connection:
     print(sqlite3.version)
 
 # create tables
-def create_table(table_name: str, columns: dict) -> None:
+def create_table(table_name: str, columns: dict) -> str:
     query = "CREATE TABLE {} (\n".format(table_name)
     for column_name in columns.keys():
         query += "\t{} {},\n".format(column_name, columns[column_name])
@@ -44,6 +44,7 @@ tables = [
         "columns": {
             "run": "INTEGER",
             "brokerId": "INTEGER",
+            "nBrokers": "INTEGER",
             "timestamp": "INTEGER",
             "userp": "REAL",
             "systemp": "REAL",
@@ -55,6 +56,7 @@ tables = [
         "columns": {
             "run": "INTEGER",
             "brokerId": "INTEGER",
+            "nBrokers": "INTEGER",
             "timestamp": "INTEGER",
             "freep": "REAL"
         }
@@ -64,6 +66,7 @@ tables = [
         "columns": {
             "run": "INTEGER",
             "brokerId": "INTEGER",
+            "nBrokers": "INTEGER",
             "timestamp": "INTEGER",
             "RxBytes": "INTEGER",
             "TxBytes": "INTEGER",
@@ -135,7 +138,9 @@ for item in os.listdir(data):
                     filepath = os.path.join(sub, "data", filename)
                     pattern = r"broker-\d+-run-\d+-(cpu|memory|network)\.csv"
                     match = re.match(pattern, filename)
+                    assert match is not None
                     measurement_type = match.group(1)
+                    cols = []
                     match measurement_type:
                         case "cpu":
                             cols = ["timestamp", "userp", "systemp", "idlep"]
@@ -147,6 +152,7 @@ for item in os.listdir(data):
                             print("no match!")
 
                     # insert the data into the database
+                    assert len(cols) > 0
                     df_chunks = pd.read_csv(
                         filepath, 
                         usecols=cols,
@@ -157,7 +163,7 @@ for item in os.listdir(data):
                         brokerId, run = extract(filename)
                         chunk["brokerId"] = brokerId
                         #chunk["run"] = run # stuoopid mistake: all files are named ...run-0... -.- => use runId from directory instead
-                        chunk["run"], _ = get_run_nbrokers(item)
+                        chunk["run"], chunk["nBrokers"] = get_run_nbrokers(item)
                         # using "with" turns this into a transaction:
                         # https://blog.rtwilson.com/a-python-sqlite3-context-manager-gotcha/
                         with connection:
