@@ -131,4 +131,7 @@ func (m *Monitor[T]) Start(timer <-chan time.Time, stop <-chan bool) {
 	}
 TheEnd:
 	log.Println(m.name, "done, flushing remaining buffer contents")
+	// TODO make sure I'm not adding stupid stuff without reading my own code
+	//  i.e., the next line
+	m.w.Flush()
 }

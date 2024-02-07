@@ -48,6 +48,7 @@ func NewNetworkMeasurement(timestamp int64, current, previous []network.Stats) M
 		} else {
 			log.Println(name, "not in prev network stats, storing absolute values")
 			// new network interface found => store absolute values because it would have been zero for the last measurement
+			// todo should be fine but think about this again
 			m[name] = struct{ RxBytes, TxBytes uint64 }{RxBytes: vals.RxBytes, TxBytes: vals.TxBytes}
 		}
 	}

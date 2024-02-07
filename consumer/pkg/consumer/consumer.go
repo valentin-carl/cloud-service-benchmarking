@@ -37,7 +37,7 @@ func (c *Consumer) StartWithBufWorkers(interrupt <-chan os.Signal) {
 
 	// ensure the queue exists before starting supervisor + workers
 	qc := c.config.Broker.Queue
-	log.Printf("\nqc.Name: %s\nqc.Durable: %t\nqc.AutoDelete: %t\nqc.Durable")
+	log.Printf("\nqc.Name: %s\nqc.Durable: %t\nqc.AutoDelete: %t\nqc.Exclusive: %t\nqc.NoWait: %t", qc.Name, qc.Durable, qc.AutoDelete, qc.Exclusive, qc.NoWait)
 
 	// rabbitmq wants 'x-quorum-initial-group-size' to be an int but golang parses all numbers in json files as float64
 	var args amqp.Table
