@@ -1,4 +1,3 @@
-import csv
 import os
 import re
 import sqlite3
@@ -43,8 +42,8 @@ tables = [
         "table_name": "cpu",
         "columns": {
             "run": "INTEGER",
-            "brokerId": "INTEGER",
             "nBrokers": "INTEGER",
+            "brokerId": "INTEGER",
             "timestamp": "INTEGER",
             "userp": "REAL",
             "systemp": "REAL",
@@ -55,8 +54,8 @@ tables = [
         "table_name": "memory",
         "columns": {
             "run": "INTEGER",
-            "brokerId": "INTEGER",
             "nBrokers": "INTEGER",
+            "brokerId": "INTEGER",
             "timestamp": "INTEGER",
             "freep": "REAL"
         }
@@ -65,8 +64,8 @@ tables = [
         "table_name": "network",
         "columns": {
             "run": "INTEGER",
-            "brokerId": "INTEGER",
             "nBrokers": "INTEGER",
+            "brokerId": "INTEGER",
             "timestamp": "INTEGER",
             "RxBytes": "INTEGER",
             "TxBytes": "INTEGER",
