@@ -58,6 +58,20 @@ resource "google_compute_firewall" "allow-rabbit" {
   source_ranges = ["0.0.0.0/0"]
 }
 
+resource "google_compute_firewall" "allow-ingress-from-iap" {
+  name = "allow-ingress-from-iap"
+  direction = "INGRESS"
+  network = google_compute_network.benchnet.name
+  source_ranges = ["35.235.240.0/20"]
+  allow {
+    protocol = "TCP"
+    ports = [
+      "22",
+      "3389"
+    ]
+  }
+}
+
 resource "google_compute_router" "router" {
   name = "router"
   region = google_compute_subnetwork.subnet.region

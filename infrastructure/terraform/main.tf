@@ -12,7 +12,7 @@ provider "google" {
 
   project = "prime-bonbon-407317"
   region  = "europe-west10"
-  zone    = "europe-west10-a"
+  zone    = "europe-west10-c"
 }
 
 module "startup-scripts" {

@@ -19,7 +19,7 @@ resource "google_compute_instance_from_template" "consumer" {
   count = local.consumer_count
 
   name = "consumer-instance-${count.index}"
-  zone = "europe-west10-a"
+  zone = "europe-west10-c"
 
   source_instance_template = google_compute_instance_template.template-consumer.self_link
 

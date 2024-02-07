@@ -19,7 +19,7 @@ cluster() {
         "sudo rabbitmqctl start_app"
     )
     for command in "${commands[@]}"; do
-        execute_remote "$1" "europe-west10-a" "$command"
+        execute_remote "$1" "europe-west10-c" "$command"
     done
 }
 

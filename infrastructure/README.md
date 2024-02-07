@@ -35,7 +35,19 @@ N_BROKER_NODES=3 # or 5 or 7, depending on the current run
 
 ### A. Starting the experiment
 
+> **Note to self**: The `terraform apply -auto-approve` command returns before all startup scripts have finished.
+> I.e., wait a bit before starting the monitoring etc., as the code will have to be built first.
+  
 TODO 
+
+You can start the experiment by running the following commands.
+
+```shell
+N_PROD=2
+N_CONS=3
+N_BROK=7
+./setup/start_experiment.sh "$N_PROD" "$N_CONS" "$N_BROK"
+```
 
 ### B. Checking on the nodes during the experiment 
 
@@ -47,7 +59,16 @@ The experiment stop automatically after the duration specified in `cloud-service
 Afterwards, the producers stop sending the regular workload and notify the consumers that the experiment is over.
 After the consumers have emptied the queue, they write the measurements remaining in their buffers to disk, which could take a few moments.
 
-TODO how to stop the broker data collection ????
+Consequently, only the data collection on the broker nodes needs to be stopped manually.
+To do so, just the following code snippet.
+
+```shell
+# TODO move to different file
+for (( i = 0 ; i < "$N_BROK" ; i++ )); do
+	gcloud compute ssh "broker-instance-$i" --command \
+		'sudo kill -s 2 "$(pgrep main | head -n 1)"'
+done
+```
 
 ## 3. Collecting the data
 
@@ -74,8 +95,6 @@ terraform destroy --auto-approve
 
 #### Start monitoring at all brokers
 
-> **Note to self**: The `terraform apply -auto-approve` command returns before all startup scripts have finished.
-> I.e., wait a bit before starting the monitoring etc., as the code will have to be built first.
 
 ```shell
 for (( i = 0 ; i < "$N_BROK" ; i++ )); do

@@ -27,6 +27,7 @@ done
 # download results from consumers
 for (( i = 0 ; i < "$N_CONS" ; i++ )); do
     gcloud compute scp --recurse "consumer-instance-$i":/benchmark/cloud-service-benchmarking/consumer/out/ ./consumer/
+    gcloud compute scp --recurse "consumer-instance-2":/benchmark/cloud-service-benchmarking/consumer/out/ ./consumer/
 done
 
 #
@@ -45,6 +46,7 @@ for (( i = 0 ; i < "$N_BROK" ; i++ )); do
     mkdir -p "./logs/broker-$i"
     gcloud compute scp "broker-instance-$i":/var/log/benchmark.log "./logs/broker-$i/benchmark.log"
     gcloud compute scp "broker-instance-$i":/var/log/startup.log "./logs/broker-$i/startup.log"
+    gcloud compute scp --recurse "root@broker-instance-$i":/var/log/rabbitmq/ "./logs/broker-$i/"
 done
 
 # consumer

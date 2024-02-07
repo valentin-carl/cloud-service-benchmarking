@@ -19,7 +19,7 @@ resource "google_compute_instance_from_template" "broker" {
   count = local.broker_count
 
   name = "broker-instance-${count.index}"
-  zone = "europe-west10-a"
+  zone = "europe-west10-c"
 
   source_instance_template = google_compute_instance_template.template-broker.self_link
 
